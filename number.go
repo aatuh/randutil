@@ -1,0 +1,282 @@
+package random
+
+import (
+	"crypto/rand"
+	"errors"
+	"math/big"
+)
+
+// Constants to help define the full range for different integer types.
+const (
+	maxInt   = int(^uint(0) >> 1)
+	minInt   = -maxInt - 1
+	maxInt32 = int32(^uint32(0) >> 1) // 2147483647
+	minInt32 = -maxInt32 - 1          // -2147483648
+	maxInt64 = int64(^uint64(0) >> 1) //  9223372036854775807
+	minInt64 = -maxInt64 - 1          // -9223372036854775808
+)
+
+// IntRange returns a secure random int in [minInclusive, maxInclusive].
+//
+// Parameters:
+// - minInclusive: The minimum value (inclusive).
+// - maxInclusive: The maximum value (inclusive).
+//
+// Returns:
+//   - int: A random int in [minInclusive, maxInclusive].
+//   - error: An error if crypto/rand fails.
+func IntRange(minInclusive int, maxInclusive int) (int, error) {
+	if minInclusive > maxInclusive {
+		return 0, errors.New("min value is greater than max value")
+	}
+	// Compute the inclusive range length.
+	diff := int64(maxInclusive) - int64(minInclusive) + 1
+	rng := big.NewInt(diff)
+	n, err := rand.Int(rand.Reader, rng)
+	if err != nil {
+		return 0, err
+	}
+	return int(n.Int64()) + minInclusive, nil
+}
+
+// MustIntRange returns a secure random int in [minInclusive, maxInclusive].
+// It panics if an error occurs.
+//
+// Parameters:
+// - minInclusive: The minimum value (inclusive).
+// - maxInclusive: The maximum value (inclusive).
+//
+// Returns:
+//   - int: A random int in [minInclusive, maxInclusive].
+func MustIntRange(minInclusive int, maxInclusive int) int {
+	i, err := IntRange(minInclusive, maxInclusive)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// AnyInt returns a secure random int from the full range of int.
+//
+// Returns:
+//   - int: A random int in [-2147483647, 2147483648].
+//   - error: An error if crypto/rand fails.
+func AnyInt() (int, error) {
+	return IntRange(minInt, maxInt)
+}
+
+// MustAnyInt returns a secure random int from the full range of int.
+// It panics if an error occurs.
+//
+// Returns:
+//   - int: A random int in [-2147483647, 2147483648].
+func MustAnyInt() int {
+	return MustIntRange(minInt, maxInt)
+}
+
+// Int32Range returns a secure random int32 in [minInclusive, maxInclusive].
+//
+// Parameters:
+// - minInclusive: The minimum value (inclusive).
+// - maxInclusive: The maximum value (inclusive).
+//
+// Returns:
+//   - int32: A random int32 in [minInclusive, maxInclusive].
+//   - error: An error if crypto/rand fails.
+func Int32Range(minInclusive int32, maxInclusive int32) (int32, error) {
+	if minInclusive > maxInclusive {
+		return 0, errors.New("min value is greater than max value")
+	}
+	diff := int64(maxInclusive) - int64(minInclusive) + 1
+	rng := big.NewInt(diff)
+	n, err := rand.Int(rand.Reader, rng)
+	if err != nil {
+		return 0, err
+	}
+	return int32(n.Int64()) + minInclusive, nil
+}
+
+// MustInt32Range returns a secure random int32 in [minInclusive, maxInclusive].
+// It panics if an error occurs.
+//
+// Parameters:
+// - minInclusive: The minimum value (inclusive).
+// - maxInclusive: The maximum value (inclusive).
+//
+// Returns:
+//   - int32: A random int32 in [minInclusive, maxInclusive].
+func MustInt32Range(minInclusive int32, maxInclusive int32) int32 {
+	i, err := Int32Range(minInclusive, maxInclusive)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// AnyInt32 returns a random int32 in the full int32 range.
+//
+// Returns:
+//   - int32: A random int32 in [-2147483647, 2147483648].
+//   - error: An error if crypto/rand fails.
+func AnyInt32() (int32, error) {
+	return Int32Range(minInt32, maxInt32)
+}
+
+// MustAnyInt32 returns a random int32 in the full int32 range.
+// It panics if an error occurs.
+//
+// Returns:
+//   - int32: A random int32 in [-2147483647, 2147483648].
+func MustAnyInt32() int32 {
+	return MustInt32Range(minInt32, maxInt32)
+}
+
+// PositiveInt32 returns a secure random positive int32.
+//
+// Returns:
+//   - int32: A random int32 in [1, 2147483648].
+//   - error: An error if crypto/rand fails.
+func PositiveInt32() (int32, error) {
+	return Int32Range(1, maxInt32)
+}
+
+// MustPositiveInt32 returns a secure random positive int32.
+// It panics if an error occurs.
+//
+// Returns:
+//   - int32: A random int32 in [1, 2147483648].
+func MustPositiveInt32() int32 {
+	return MustInt32Range(1, maxInt32)
+}
+
+// NegativeInt32 returns a secure random negative int32.
+//
+// Returns:
+//   - int32: A random int32 in [-2147483647, -1].
+//   - error: An error if crypto/rand fails.
+func NegativeInt32() (int32, error) {
+	return Int32Range(minInt32, -1)
+}
+
+// MustNegativeInt32 returns a secure random negative int32.
+// It panics if an error occurs.
+//
+// Returns:
+//   - int32: A random int32 in [-2147483647, -1].
+func MustNegativeInt32() int32 {
+	return MustInt32Range(minInt32, -1)
+}
+
+// Int64Range returns a secure random int64 in [minInclusive, maxInclusive].
+//
+// Parameters:
+// - minInclusive: The minimum value (inclusive).
+// - maxInclusive: The maximum value (inclusive).
+//
+// Returns:
+//   - int64: A random int64 in [minInclusive, maxInclusive].
+//   - error: An error if crypto/rand fails.
+func Int64Range(minInclusive int64, maxInclusive int64) (int64, error) {
+	if minInclusive > maxInclusive {
+		return 0, errors.New("min value is greater than max value")
+	}
+
+	// Convert the bounds to big.Int.
+	bigMin := big.NewInt(minInclusive)
+	bigMax := big.NewInt(maxInclusive)
+
+	// diff = (max - min + 1) as a big.Int
+	bigDiff := new(big.Int).Sub(bigMax, bigMin)
+	bigDiff.Add(bigDiff, big.NewInt(1))
+
+	if bigDiff.Sign() <= 0 {
+		return 0, errors.New("invalid range: difference is non-positive")
+	}
+
+	// Generate a random big.Int in [0, bigDiff).
+	n, err := rand.Int(rand.Reader, bigDiff)
+	if err != nil {
+		return 0, err
+	}
+
+	// Shift by minInclusive to get [minInclusive, maxInclusive].
+	bigResult := new(big.Int).Add(n, bigMin)
+
+	// Final check: ensure it's in int64 range (it should be).
+	if bigResult.BitLen() > 63 {
+		return 0, errors.New("random result out of int64 range")
+	}
+
+	return bigResult.Int64(), nil
+}
+
+// MustInt64Range returns a secure random int64 in [minInclusive, maxInclusive].
+// It panics if an error occurs.
+//
+// Parameters:
+// - minInclusive: The minimum value (inclusive).
+// - maxInclusive: The maximum value (inclusive).
+//
+// Returns:
+//   - int64: A random int64 in [minInclusive, maxInclusive].
+func MustInt64Range(minInclusive int64, maxInclusive int64) int64 {
+	i, err := Int64Range(minInclusive, maxInclusive)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// AnyInt64 returns a secure random int64 in the full int64 range.
+//
+// Returns:
+//   - int64: A random int64 in [-9223372036854775808, 9223372036854775807].
+//   - error: An error if crypto/rand fails.
+func AnyInt64() (int64, error) {
+	return Int64Range(minInt64, maxInt64)
+}
+
+// MustAnyInt64 returns a secure random int64 in the full int64 range.
+// It panics if an error occurs.
+//
+// Returns:
+//   - int64: A random int64 in [-9223372036854775808, 9223372036854775807].
+func MustAnyInt64() int64 {
+	return MustInt64Range(minInt64, maxInt64)
+}
+
+// PositiveInt64 returns a secure random positive int64.
+//
+// Returns:
+//   - int64: A random int64 in [1, 9223372036854775807].
+//   - error: An error if crypto/rand fails.
+func PositiveInt64() (int64, error) {
+	return Int64Range(1, maxInt64)
+}
+
+// MustPositiveInt64 returns a secure random positive int64.
+// It panics if an error occurs.
+//
+// Returns:
+//   - int64: A random int64 in [1, 9223372036854775807].
+func MustPositiveInt64() int64 {
+	return MustInt64Range(1, maxInt64)
+}
+
+// NegativeInt64 returns a secure random negative int64.
+//
+// Returns:
+//   - int64: A random int64 in [-9223372036854775808, -1].
+//   - error: An error if crypto/rand fails.
+func NegativeInt64() (int64, error) {
+	return Int64Range(minInt64, -1)
+}
+
+// MustNegativeInt64 returns a secure random negative int64.
+// It panics if an error occurs.
+//
+// Returns:
+//   - int64: A random int64 in [-9223372036854775808, -1].
+func MustNegativeInt64() int64 {
+	return MustInt64Range(minInt64, -1)
+}
