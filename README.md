@@ -5,7 +5,7 @@ Secure random helpers for numbers, strings/bytes, time, and collections.
 ## Install
 
 ```go
-import "github.com/aatuh/random"
+import "github.com/aatuh/randutil"
 ```
 
 ## Quick start

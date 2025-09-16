@@ -1,4 +1,4 @@
-package random
+package randutil
 
 // Bool returns a secure random boolean.
 //
