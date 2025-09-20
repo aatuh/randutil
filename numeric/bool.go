@@ -1,4 +1,4 @@
-package randutil
+package numeric
 
 // Bool returns a secure random boolean.
 //
@@ -13,10 +13,10 @@ func Bool() (bool, error) {
 	return i == 1, nil
 }
 
-// Bool returns a secure random boolean. It panics if an error occurs.
+// MustBool returns a secure random boolean. It panics if an error occurs.
 //
 // Returns:
-//   - bool
+//   - bool: A random boolean value.
 func MustBool() bool {
 	b, err := Bool()
 	if err != nil {

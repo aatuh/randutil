@@ -1,8 +1,25 @@
-package randutil
+package time
 
 import (
+	"crypto/rand"
+	"errors"
+	"math/big"
 	"time"
 )
+
+// IntRange returns a secure random int in [minInclusive, maxInclusive].
+func IntRange(minInclusive int, maxInclusive int) (int, error) {
+	if minInclusive > maxInclusive {
+		return 0, errors.New("min value is greater than max value")
+	}
+	diff := int64(maxInclusive) - int64(minInclusive) + 1
+	rng := big.NewInt(diff)
+	n, err := rand.Int(rand.Reader, rng)
+	if err != nil {
+		return 0, err
+	}
+	return int(n.Int64()) + minInclusive, nil
+}
 
 // Datetime returns a secure random time between year 1 and 9999.
 //
@@ -43,7 +60,7 @@ func Datetime() (time.Time, error) {
 		time.UTC), nil
 }
 
-// Datetime returns a secure random time between year 1 and 9999. It panics
+// MustDatetime returns a secure random time between year 1 and 9999. It panics
 // if an error occurs.
 //
 // Returns:
@@ -70,7 +87,7 @@ func TimeInNearPast() (time.Time, error) {
 		time.Duration(offset)), nil
 }
 
-// TimeInNearPast returns a time a few minutes in the past. It panics if an
+// MustTimeInNearPast returns a time a few minutes in the past. It panics if an
 // error occurs.
 //
 // Returns:
@@ -97,7 +114,7 @@ func TimeInNearFuture() (time.Time, error) {
 		time.Duration(offset)), nil
 }
 
-// TimeInNearFuture returns a time a few minutes in the future. It panics if
+// MustTimeInNearFuture returns a time a few minutes in the future. It panics if
 // an error occurs.
 //
 // Returns:

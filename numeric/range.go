@@ -1,4 +1,4 @@
-package randutil
+package numeric
 
 import (
 	"crypto/rand"
