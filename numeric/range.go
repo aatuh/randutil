@@ -1,11 +1,5 @@
 package numeric
 
-import (
-	"crypto/rand"
-	"errors"
-	"math/big"
-)
-
 // Constants to help define the full range for different integer types.
 const (
 	maxInt   = int(^uint(0) >> 1)
@@ -26,17 +20,7 @@ const (
 //   - int: A random int in [minInclusive, maxInclusive].
 //   - error: An error if crypto/rand fails.
 func IntRange(minInclusive int, maxInclusive int) (int, error) {
-	if minInclusive > maxInclusive {
-		return 0, errors.New("min value is greater than max value")
-	}
-	// Compute the inclusive range length.
-	diff := int64(maxInclusive) - int64(minInclusive) + 1
-	rng := big.NewInt(diff)
-	n, err := rand.Int(rand.Reader, rng)
-	if err != nil {
-		return 0, err
-	}
-	return int(n.Int64()) + minInclusive, nil
+	return def.IntRange(minInclusive, maxInclusive)
 }
 
 // MustIntRange returns a secure random int in [minInclusive, maxInclusive].
@@ -59,7 +43,7 @@ func MustIntRange(minInclusive int, maxInclusive int) int {
 // AnyInt returns a secure random int from the full range of int.
 //
 // Returns:
-//   - int: A random int in [-2147483647, 2147483648].
+//   - int: A random int in the full int range.
 //   - error: An error if crypto/rand fails.
 func AnyInt() (int, error) {
 	return IntRange(minInt, maxInt)
@@ -69,7 +53,7 @@ func AnyInt() (int, error) {
 // It panics if an error occurs.
 //
 // Returns:
-//   - int: A random int in [-2147483647, 2147483648].
+//   - int: A random int in the full int range.
 func MustAnyInt() int {
 	return MustIntRange(minInt, maxInt)
 }
@@ -84,16 +68,7 @@ func MustAnyInt() int {
 //   - int32: A random int32 in [minInclusive, maxInclusive].
 //   - error: An error if crypto/rand fails.
 func Int32Range(minInclusive int32, maxInclusive int32) (int32, error) {
-	if minInclusive > maxInclusive {
-		return 0, errors.New("min value is greater than max value")
-	}
-	diff := int64(maxInclusive) - int64(minInclusive) + 1
-	rng := big.NewInt(diff)
-	n, err := rand.Int(rand.Reader, rng)
-	if err != nil {
-		return 0, err
-	}
-	return int32(n.Int64()) + minInclusive, nil
+	return def.Int32Range(minInclusive, maxInclusive)
 }
 
 // MustInt32Range returns a secure random int32 in [minInclusive, maxInclusive].
@@ -116,7 +91,7 @@ func MustInt32Range(minInclusive int32, maxInclusive int32) int32 {
 // AnyInt32 returns a random int32 in the full int32 range.
 //
 // Returns:
-//   - int32: A random int32 in [-2147483647, 2147483648].
+//   - int32: A random int32 in the full int32 range.
 //   - error: An error if crypto/rand fails.
 func AnyInt32() (int32, error) {
 	return Int32Range(minInt32, maxInt32)
@@ -126,7 +101,7 @@ func AnyInt32() (int32, error) {
 // It panics if an error occurs.
 //
 // Returns:
-//   - int32: A random int32 in [-2147483647, 2147483648].
+//   - int32: A random int32 in the full int32 range.
 func MustAnyInt32() int32 {
 	return MustInt32Range(minInt32, maxInt32)
 }
@@ -177,37 +152,7 @@ func MustNegativeInt32() int32 {
 //   - int64: A random int64 in [minInclusive, maxInclusive].
 //   - error: An error if crypto/rand fails.
 func Int64Range(minInclusive int64, maxInclusive int64) (int64, error) {
-	if minInclusive > maxInclusive {
-		return 0, errors.New("min value is greater than max value")
-	}
-
-	// Convert the bounds to big.Int.
-	bigMin := big.NewInt(minInclusive)
-	bigMax := big.NewInt(maxInclusive)
-
-	// diff = (max - min + 1) as a big.Int
-	bigDiff := new(big.Int).Sub(bigMax, bigMin)
-	bigDiff.Add(bigDiff, big.NewInt(1))
-
-	if bigDiff.Sign() <= 0 {
-		return 0, errors.New("invalid range: difference is non-positive")
-	}
-
-	// Generate a random big.Int in [0, bigDiff).
-	n, err := rand.Int(rand.Reader, bigDiff)
-	if err != nil {
-		return 0, err
-	}
-
-	// Shift by minInclusive to get [minInclusive, maxInclusive].
-	bigResult := new(big.Int).Add(n, bigMin)
-
-	// Final check: ensure it's in int64 range (it should be).
-	if bigResult.BitLen() > 63 {
-		return 0, errors.New("random result out of int64 range")
-	}
-
-	return bigResult.Int64(), nil
+	return def.Int64Range(minInclusive, maxInclusive)
 }
 
 // MustInt64Range returns a secure random int64 in [minInclusive, maxInclusive].

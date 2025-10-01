@@ -1,33 +1,13 @@
 package collection
 
 import (
-	"crypto/rand"
-	"errors"
 	"math"
 	"sort"
+
+	"github.com/aatuh/randutil/v2/core"
 )
 
-// Float64 returns a uniform random float64 in [0.0, 1.0) with 53 bits
-// of precision built from crypto/rand.
-func Float64() (float64, error) {
-	var b [8]byte
-	if _, err := rand.Read(b[:]); err != nil {
-		return 0, err
-	}
-	u := uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
-		uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
-	u >>= 11
-	const denom = 1 << 53
-	return float64(u) / float64(denom), nil
-}
-
-// Package-level errors.
-var (
-	ErrInvalidWeights  = errors.New("invalid weights")
-	ErrWeightsMismatch = errors.New("items/weights mismatch")
-	ErrInvalidN        = errors.New("n must be > 0")
-	ErrSampleTooLarge  = errors.New("sample k exceeds size")
-)
+// Use core error sentinels for consistency across packages.
 
 // WeightedChoice returns one item where probability is proportional to
 // its non-negative weight. Zero-weight items are never chosen.
@@ -42,22 +22,22 @@ var (
 func WeightedChoice[T any](items []T, weights []float64) (T, error) {
 	var z T
 	if len(items) == 0 {
-		return z, errors.New("randutil: empty items")
+		return z, core.ErrEmptyItems
 	}
 	if len(items) != len(weights) {
-		return z, ErrWeightsMismatch
+		return z, core.ErrWeightsMismatch
 	}
 	var sum float64
 	for _, w := range weights {
 		if w < 0 || math.IsNaN(w) || math.IsInf(w, 0) {
-			return z, ErrInvalidWeights
+			return z, core.ErrInvalidWeights
 		}
 		sum += w
 	}
 	if sum <= 0 {
-		return z, ErrInvalidWeights
+		return z, core.ErrInvalidWeights
 	}
-	u, err := Float64()
+	u, err := Default.G.Float64()
 	if err != nil {
 		return z, err
 	}
@@ -75,7 +55,7 @@ func WeightedChoice[T any](items []T, weights []float64) (T, error) {
 			return items[i], nil
 		}
 	}
-	return z, ErrInvalidWeights
+	return z, core.ErrInvalidWeights
 }
 
 // MustWeightedChoice returns one item where probability is proportional to
@@ -111,16 +91,16 @@ func WeightedSample[T any](
 	items []T, weights []float64, k int,
 ) ([]T, error) {
 	if k < 0 {
-		return nil, errors.New("n must be > 0")
+		return nil, core.ErrInvalidN
 	}
 	if k == 0 {
 		return []T{}, nil
 	}
 	if len(items) == 0 {
-		return nil, errors.New("randutil: empty items")
+		return nil, core.ErrEmptyItems
 	}
 	if len(items) != len(weights) {
-		return nil, ErrWeightsMismatch
+		return nil, core.ErrWeightsMismatch
 	}
 	type kv struct {
 		key float64
@@ -129,7 +109,7 @@ func WeightedSample[T any](
 	keys := make([]kv, 0, len(items))
 	for i, w := range weights {
 		if w < 0 || math.IsNaN(w) || math.IsInf(w, 0) {
-			return nil, ErrInvalidWeights
+			return nil, core.ErrInvalidWeights
 		}
 		if w == 0 {
 			continue
@@ -139,7 +119,7 @@ func WeightedSample[T any](
 		var u float64
 		for {
 			var err error
-			u, err = Float64()
+			u, err = Default.G.Float64()
 			if err != nil {
 				return nil, err
 			}
@@ -150,8 +130,11 @@ func WeightedSample[T any](
 		key := -math.Log(u) / w
 		keys = append(keys, kv{key: key, i: i})
 	}
+	if len(keys) == 0 {
+		return nil, core.ErrInvalidWeights
+	}
 	if k > len(keys) {
-		return nil, errors.New("sample k exceeds size")
+		return nil, core.ErrSampleTooLarge
 	}
 	sort.Slice(keys, func(i, j int) bool { return keys[i].key < keys[j].key })
 	out := make([]T, k)

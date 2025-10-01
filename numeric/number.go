@@ -1,22 +1,12 @@
 package numeric
 
-import (
-	"encoding/binary"
-
-	"github.com/aatuh/randutil/core"
-)
-
 // Uint64 returns a random uint64 from the active source.
 //
 // Returns:
 //   - uint64: A random uint64 value.
 //   - error: An error if the source fails.
 func Uint64() (uint64, error) {
-	var b [8]byte
-	if err := readFull(b[:]); err != nil {
-		return 0, err
-	}
-	return binary.LittleEndian.Uint64(b[:]), nil
+	return def.Uint64()
 }
 
 // Uint64n returns a uniform random integer in [0, n) using rejection
@@ -29,22 +19,7 @@ func Uint64() (uint64, error) {
 //   - uint64: A random uint64 in [0, n).
 //   - error: An error if the source fails or n == 0.
 func Uint64n(n uint64) (uint64, error) {
-	if n == 0 {
-		return 0, core.ErrInvalidRange
-	}
-	var (
-		max   = ^uint64(0)
-		limit = max - (max % n)
-	)
-	for {
-		u, err := Uint64()
-		if err != nil {
-			return 0, err
-		}
-		if u < limit {
-			return u % n, nil
-		}
-	}
+	return def.Uint64n(n)
 }
 
 // Intn returns a uniform random int in [0, n). n must be > 0.
@@ -56,14 +31,7 @@ func Uint64n(n uint64) (uint64, error) {
 //   - int: A random int in [0, n).
 //   - error: An error if the source fails or n <= 0.
 func Intn(n int) (int, error) {
-	if n <= 0 {
-		return 0, core.ErrInvalidN
-	}
-	u, err := Uint64n(uint64(n))
-	if err != nil {
-		return 0, err
-	}
-	return int(u), nil
+	return def.Intn(n)
 }
 
 // Int64n returns a uniform random int64 in [0, n). n must be > 0.
@@ -75,14 +43,7 @@ func Intn(n int) (int, error) {
 //   - int64: A random int64 in [0, n).
 //   - error: An error if the source fails or n <= 0.
 func Int64n(n int64) (int64, error) {
-	if n <= 0 {
-		return 0, core.ErrInvalidN
-	}
-	u, err := Uint64n(uint64(n))
-	if err != nil {
-		return 0, err
-	}
-	return int64(u), nil
+	return def.Int64n(n)
 }
 
 // Float64 returns a uniform random float64 in [0.0, 1.0) with 53 bits
@@ -92,13 +53,7 @@ func Int64n(n int64) (int64, error) {
 //   - float64: A random float64 in [0.0, 1.0).
 //   - error: An error if the source fails.
 func Float64() (float64, error) {
-	var b [8]byte
-	if err := readFull(b[:]); err != nil {
-		return 0, err
-	}
-	u := binary.LittleEndian.Uint64(b[:]) >> 11
-	const denom = 1 << 53
-	return float64(u) / float64(denom), nil
+	return def.Float64()
 }
 
 // MustUint64 returns a random uint64 from crypto/rand. It panics on error.

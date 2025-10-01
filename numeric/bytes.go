@@ -1,9 +1,5 @@
 package numeric
 
-import (
-	"github.com/aatuh/randutil/core"
-)
-
 // Bytes returns n random bytes from the active entropy source.
 //
 // Parameters:
@@ -13,17 +9,7 @@ import (
 //   - []byte: A slice of n random bytes.
 //   - error: An error if crypto/rand fails.
 func Bytes(n int) ([]byte, error) {
-	if n < 0 {
-		return nil, core.ErrInvalidN
-	}
-	if n == 0 {
-		return []byte{}, nil
-	}
-	buf := make([]byte, n)
-	if err := readFull(buf); err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return def.Bytes(n)
 }
 
 // Fill populates b with random bytes from the active entropy source.
@@ -34,7 +20,7 @@ func Bytes(n int) ([]byte, error) {
 // Returns:
 //   - error: An error if crypto/rand fails.
 func Fill(b []byte) error {
-	return readFull(b)
+	return def.Fill(b)
 }
 
 // MustBytes returns n random bytes from crypto/rand. It panics on error.

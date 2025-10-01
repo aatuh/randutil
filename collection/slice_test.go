@@ -3,6 +3,9 @@ package collection
 import (
 	"sort"
 	"testing"
+
+	"github.com/aatuh/randutil/v2/core"
+	"github.com/aatuh/randutil/v2/numeric"
 )
 
 func TestShufflePermutation(t *testing.T) {
@@ -84,7 +87,7 @@ func TestPerm(t *testing.T) {
 }
 
 func TestUint64nInvalid(t *testing.T) {
-	if _, err := Uint64n(0); err == nil {
+	if _, err := numeric.Uint64n(0); err == nil {
 		t.Fatal("expected error for n == 0")
 	}
 }
@@ -110,28 +113,12 @@ func TestSlicePickOneEmpty(t *testing.T) {
 	}
 }
 
-func TestSlicePickManyFullChance(t *testing.T) {
-	s := []string{"a", "b", "c"}
-	picked, err := SlicePickMany(s, 100)
-	if err != nil {
-		t.Fatalf("SlicePickMany error: %v", err)
-	}
-	if len(picked) != len(s) {
-		t.Fatalf("SlicePickMany returned %d items want %d", len(picked), len(s))
-	}
-	for i := range s {
-		if picked[i] != s[i] {
-			t.Fatalf("SlicePickMany[%d] = %q want %q", i, picked[i], s[i])
-		}
-	}
-}
-
 func TestSampleErrors(t *testing.T) {
 	s := []int{1, 2, 3}
-	if _, err := Sample(s, -1); err == nil || err.Error() != "n must be > 0" {
+	if _, err := Sample(s, -1); err != core.ErrInvalidN {
 		t.Fatalf("Sample negative error = %v", err)
 	}
-	if _, err := Sample(s, 4); err == nil || err.Error() != "sample k exceeds size" {
+	if _, err := Sample(s, 4); err != core.ErrSampleTooLarge {
 		t.Fatalf("Sample oversize error = %v", err)
 	}
 }

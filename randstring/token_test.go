@@ -1,4 +1,4 @@
-package string
+package randstring
 
 import (
 	"encoding/base64"

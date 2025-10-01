@@ -1,9 +1,4 @@
-package string
-
-import (
-	"encoding/base64"
-	"encoding/hex"
-)
+package randstring
 
 // TokenHex returns a lower-case hex string of length 2*nBytes.
 // It reads nBytes from crypto/rand.
@@ -15,11 +10,7 @@ import (
 //   - string: A lower-case hex string of length 2*nBytes.
 //   - error: An error if crypto/rand fails.
 func TokenHex(nBytes int) (string, error) {
-	b, err := Bytes(nBytes)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
+	return Default.TokenHex(nBytes)
 }
 
 // MustTokenHex returns a lower-case hex string of length 2*nBytes.
@@ -49,11 +40,7 @@ func MustTokenHex(nBytes int) string {
 //     approximately 4*ceil(nBytes/3).
 //   - error: An error if crypto/rand fails.
 func TokenBase64(nBytes int) (string, error) {
-	b, err := Bytes(nBytes)
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(b), nil
+	return Default.TokenBase64(nBytes)
 }
 
 // MustTokenBase64 returns a standard base64 string (with padding) encoding
@@ -83,11 +70,7 @@ func MustTokenBase64(nBytes int) string {
 //     approximately 4*ceil(nBytes/3).
 //   - error: An error if crypto/rand fails.
 func TokenURLSafe(nBytes int) (string, error) {
-	b, err := Bytes(nBytes)
-	if err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
+	return Default.TokenURLSafe(nBytes)
 }
 
 // MustTokenURLSafe returns a URL-safe base64 string without padding

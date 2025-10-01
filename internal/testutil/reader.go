@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/aatuh/randutil/core"
+	"github.com/aatuh/randutil/v2/core"
 )
 
 // SeqReader feeds deterministic entropy to crypto consumers. It returns

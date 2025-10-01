@@ -4,8 +4,6 @@ import (
 	"errors"
 	"math"
 	"time"
-
-	"github.com/aatuh/randutil/numeric"
 )
 
 // Bernoulli returns true with probability p and false otherwise.
@@ -18,14 +16,7 @@ import (
 //   - bool: A random boolean value.
 //   - error: An error if the source fails.
 func Bernoulli(p float64) (bool, error) {
-	if math.IsNaN(p) || p < 0 || p > 1 {
-		return false, errors.New("p must be in [0,1]")
-	}
-	u, err := numeric.Float64()
-	if err != nil {
-		return false, err
-	}
-	return u < p, nil
+	return Default.Bernoulli(p)
 }
 
 // Categorical samples an index in [0, len(weights)) with probability
@@ -39,29 +30,7 @@ func Bernoulli(p float64) (bool, error) {
 //   - int: A random index in [0, len(weights)).
 //   - error: An error if the source fails.
 func Categorical(weights []float64) (int, error) {
-	var sum float64
-	for _, w := range weights {
-		if math.IsNaN(w) || w < 0 {
-			return 0, errors.New("weights must be >= 0")
-		}
-		sum += w
-	}
-	if sum == 0 {
-		return 0, errors.New("at least one weight must be > 0")
-	}
-	u, err := numeric.Float64()
-	if err != nil {
-		return 0, err
-	}
-	target := u * sum
-	acc := 0.0
-	for i, w := range weights {
-		acc += w
-		if target < acc {
-			return i, nil
-		}
-	}
-	return len(weights) - 1, nil
+	return Default.Categorical(weights)
 }
 
 // Exponential samples an exponential(lambda). lambda must be > 0.
@@ -73,18 +42,7 @@ func Categorical(weights []float64) (int, error) {
 //   - float64: A random float64 value.
 //   - error: An error if the source fails.
 func Exponential(lambda float64) (float64, error) {
-	if !(lambda > 0) || math.IsNaN(lambda) {
-		return 0, errors.New("lambda must be > 0")
-	}
-	u, err := numeric.Float64()
-	if err != nil {
-		return 0, err
-	}
-	// Use 1-u to avoid log(0); u in [0,1).
-	if u == 0 {
-		u = math.SmallestNonzeroFloat64
-	}
-	return -math.Log(1-u) / lambda, nil
+	return Default.Exponential(lambda)
 }
 
 // Normal returns a normal(mean, stddev) variate using Box-Muller.
@@ -98,27 +56,7 @@ func Exponential(lambda float64) (float64, error) {
 //   - float64: A random float64 value.
 //   - error: An error if the source fails.
 func Normal(mean, stddev float64) (float64, error) {
-	if math.IsNaN(mean) || math.IsNaN(stddev) || stddev < 0 {
-		return 0, errors.New("invalid mean/stddev")
-	}
-	if stddev == 0 {
-		return mean, nil
-	}
-	u1, err := numeric.Float64()
-	if err != nil {
-		return 0, err
-	}
-	u2, err := numeric.Float64()
-	if err != nil {
-		return 0, err
-	}
-	if u1 == 0 {
-		u1 = math.SmallestNonzeroFloat64
-	}
-	r := math.Sqrt(-2 * math.Log(u1))
-	theta := 2 * math.Pi * u2
-	z := r * math.Cos(theta)
-	return mean + stddev*z, nil
+	return Default.Normal(mean, stddev)
 }
 
 // Zipf is a precomputed sampler for Zipf(s, v) over [1..imax] where:
@@ -167,7 +105,7 @@ func NewZipf(s, v float64, imax int) (*Zipf, error) {
 //   - int: A random index in [1..imax].
 //   - error: An error if the source fails.
 func (z *Zipf) Next() (int, error) {
-	u, err := numeric.Float64()
+	u, err := Default.G.Float64()
 	if err != nil {
 		return 0, err
 	}
@@ -199,4 +137,91 @@ func SeededClockNormal(stddevSeconds float64) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return now.Add(time.Duration(j * float64(time.Second))), nil
+}
+
+// MustBernoulli returns true with probability p and false otherwise.
+// It panics on error.
+//
+// Parameters:
+//   - p: The probability of true.
+//
+// Returns:
+//   - bool: A random boolean value.
+func MustBernoulli(p float64) bool {
+	return Default.MustBernoulli(p)
+}
+
+// MustCategorical samples an index in [0, len(weights)) with probability
+// proportional to weights[i]. It panics on error.
+//
+// Parameters:
+//   - weights: The weights of the categories.
+//
+// Returns:
+//   - int: A random index in [0, len(weights)).
+func MustCategorical(weights []float64) int {
+	return Default.MustCategorical(weights)
+}
+
+// MustExponential returns a random value from an exponential distribution
+// with rate parameter lambda. It panics on error.
+//
+// Parameters:
+//   - lambda: The rate parameter (must be > 0).
+//
+// Returns:
+//   - float64: A random value from the exponential distribution.
+func MustExponential(lambda float64) float64 {
+	return Default.MustExponential(lambda)
+}
+
+// MustNormal returns a random value from a normal distribution
+// with mean mu and standard deviation sigma. It panics on error.
+//
+// Parameters:
+//   - mu: The mean of the distribution.
+//   - sigma: The standard deviation (must be > 0).
+//
+// Returns:
+//   - float64: A random value from the normal distribution.
+func MustNormal(mu, sigma float64) float64 {
+	return Default.MustNormal(mu, sigma)
+}
+
+// MustUniform returns a random value from a uniform distribution
+// in [min, max). It panics on error.
+//
+// Parameters:
+//   - min: The minimum value (inclusive).
+//   - max: The maximum value (exclusive).
+//
+// Returns:
+//   - float64: A random value from the uniform distribution.
+func MustUniform(min, max float64) float64 {
+	return Default.MustUniform(min, max)
+}
+
+// MustPoisson returns a random value from a Poisson distribution
+// with parameter lambda. It panics on error.
+//
+// Parameters:
+//   - lambda: The rate parameter (must be > 0).
+//
+// Returns:
+//   - int: A random value from the Poisson distribution.
+func MustPoisson(lambda float64) int {
+	return Default.MustPoisson(lambda)
+}
+
+// MustGamma returns a random value from a gamma distribution
+// with shape alpha and rate beta. It panics on error.
+//
+// Parameters:
+//   - alpha: The shape parameter (must be > 0).
+//   - beta: The rate parameter (must be > 0).
+//
+// Returns:
+//   - float64: A random value from the gamma distribution.
+func MustGamma(alpha, beta float64) float64 {
+	return Default.MustGamma(alpha, beta)
 }

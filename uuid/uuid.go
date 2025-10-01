@@ -3,9 +3,6 @@ package uuid
 import (
 	"errors"
 	"regexp"
-	"time"
-
-	"github.com/aatuh/randutil/numeric"
 )
 
 // UUID is a lower-case canonical textual UUID.
@@ -33,13 +30,7 @@ var (
 //   - UUID: A random UUID conforming to Version 4 and Variant 1.
 //   - error: An error if crypto/rand fails.
 func V4() (UUID, error) {
-	b, err := numeric.Bytes(16)
-	if err != nil {
-		return "", err
-	}
-	b[6] = (b[6] & 0x0f) | 0x40 // version 4
-	b[8] = (b[8] & 0x3f) | 0x80 // variant 10xx
-	return fromBytes(b), nil
+	return Default.V4()
 }
 
 // MustV4 returns a v4 UUID or panics.
@@ -61,20 +52,7 @@ func MustV4() UUID {
 //   - UUID: A random UUID conforming to Version 7 and Variant 1.
 //   - error: An error if crypto/rand fails.
 func V7() (UUID, error) {
-	b, err := numeric.Bytes(16)
-	if err != nil {
-		return "", err
-	}
-	ms := uint64(time.Now().UTC().UnixMilli())
-	b[0] = byte(ms >> 40)
-	b[1] = byte(ms >> 32)
-	b[2] = byte(ms >> 24)
-	b[3] = byte(ms >> 16)
-	b[4] = byte(ms >> 8)
-	b[5] = byte(ms)
-	b[6] = (b[6] & 0x0f) | 0x70 // version 7
-	b[8] = (b[8] & 0x3f) | 0x80 // variant 10xx
-	return fromBytes(b), nil
+	return Default.V7()
 }
 
 // MustV7 returns a v7 UUID or panics.

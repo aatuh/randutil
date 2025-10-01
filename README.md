@@ -1,13 +1,13 @@
 # randutil
 
 CSPRNG-first random utilities for Go. One small package that does the
-common random things: bias-free integers, bytes, strings/tokens/emails,
+common random things: bias-free integers, bytes, strings/tokens, emails,
 shuffle/sample for slices, and realistic date/time helpers.
 
 ## Install
 
 ```bash
-go get github.com/aatuh/randutil
+go get github.com/aatuh/randutil/v2
 ```
 
 ## Quick start
@@ -17,40 +17,54 @@ package main
 
 import (
   "fmt"
-  "github.com/aatuh/randutil"
+
+  "github.com/aatuh/randutil/v2/numeric"
+  "github.com/aatuh/randutil/v2/collection"
+  "github.com/aatuh/randutil/v2/randstring"
+  "github.com/aatuh/randutil/v2/email"
+  "github.com/aatuh/randutil/v2/randtime"
+  "github.com/aatuh/randutil/v2/uuid"
 )
 
 func main() {
   // Numbers
-  n := randutil.MustIntRange(10, 20)  // inclusive range
-  f := randutil.MustFloat64()         // [0,1)
-  b := randutil.MustBytes(16)         // 16 random bytes
+  n := numeric.MustIntRange(10, 20)     // inclusive
+  f := numeric.MustFloat64()            // [0,1)
+  b := numeric.MustBytes(16)            // 16 random bytes
+  ok := numeric.MustBool()
 
-  // Booleans
-  ok := randutil.MustBool()
-
-  // Strings / tokens / email
-  s   := randutil.MustString(12)           // lower-case alnum
-  hex := randutil.MustHex(32)              // 32 hex chars (16 bytes)
-  b64 := randutil.MustBase64(24)           // encodes 24 random bytes
-  tok := randutil.MustTokenURLSafe(24)     // URL-safe base64 (no padding)
-  mail:= randutil.MustEmail(16)            // exact-length local@domain.com
+  // Strings / tokens
+  s   := randstring.MustString(12)                  // lower-case alnum
+  hex := randstring.MustHex(32)                     // 32 hex chars (16 bytes)
+  b64 := randstring.MustBase64(24)                  // encodes 24 random bytes
+  tok := randstring.MustTokenURLSafe(24)            // URL-safe base64
+  
+  // Email addresses
+  mail := email.MustEmailSimple(16)                 // exact-length local@domain.com
+  mail2 := email.MustEmail(email.EmailOptions{TLD: "org"}) // options
 
   // Collections
   arr := []int{1,2,3,4,5}
-  randutil.MustShuffle(arr)                // in-place Fisher–Yates
-  top2 := randutil.MustSample(arr, 2)      // k without replacement
-  pick := randutil.MustSlicePickOne(arr)
-  pickedMany := randutil.MustSlicePickMany([]any{"a","b","c"}, 50)
+  collection.MustShuffle(arr)                       // in-place Fisher–Yates
+  top2 := collection.MustSample(arr, 2)             // k without replacement
+  pick := collection.MustSlicePickOne(arr)
+  pickedMany := collection.MustPickByProbability([]string{"a","b","c"}, 0.5)
 
   // Time
-  t  := randutil.MustDatetime()            // valid calendar date/time
-  p  := randutil.MustTimeInNearPast()
-  fu := randutil.MustTimeInNearFuture()
+  t  := randtime.MustDatetime()
+  p  := randtime.MustTimeInNearPast()
+  fu := randtime.MustTimeInNearFuture()
 
-  fmt.Println(n, f, len(b), ok, s, hex, b64, tok, mail, arr, top2, pick, pickedMany, t, p, fu)
+  // UUIDs
+  u4 := uuid.MustV4()
+  u7 := uuid.MustV7()
+
+  fmt.Println(n, f, len(b), ok, s, hex, b64, tok, mail, mail2, arr, top2, pick, pickedMany, t, p, fu, u4, u7)
 }
 ```
+
+Note: Every `MustX(...)` has a non-panicking `X(...)` variant that returns
+`(T, error)` for use in servers/CLIs where you want to handle errors.
 
 ## API overview
 
@@ -73,26 +87,35 @@ Uniform integers without modulo bias (rejection sampling under the hood),
 
 ### Strings & tokens
 
-Lower-case alnum by default; hex/base64 helpers; exact-length emails.
+Lower-case alnum by default; hex/base64 helpers.
 
-* `String(n)` and `GetWithCustomCharset(n, charset)`
+* `String(n)` and `StringWithCharset(n, charset)`
 * `Hex(len)` where `len` must be even (2 chars per byte)
 * `Base64(byteLen)`, `TokenHex(byteLen)`, `TokenBase64(byteLen)`,
   `TokenURLSafe(byteLen)`
-* `Email(totalLength)` builds `local@domain.com`, reserving 5 chars for
-  "@" + ".com"; minimum length is 6.
+
+### Email addresses
+
+Random email generation with customizable local parts, domains, and TLDs.
+
+* `Email(opts)` - Full control with EmailOptions
+* `EmailSimple(totalLength)` - Legacy exact-length emails
+* `EmailWithCustomLocal(localPart)`
+* `EmailWithCustomDomain(domainPart)`
+* `EmailWithCustomTLD(tld)`
+* `EmailWithRandomTLD()`
+* `EmailWithoutTLD()`
 
 ### Collections (slices)
 
-Unbiased in-place Fisher–Yates shuffle, sampling without replacement,
-and simple picks.
+Unbiased Fisher–Yates shuffle, sampling without replacement, and simple picks.
 
 * `Shuffle[T]([]T)`
-* `Sample[T]([]T, k)` (returns a new slice of k unique items)
-* `Perm(n)` → random permutation of 0..n-1
+* `Sample[T]([]T, k)` – returns a new slice, no duplicates
+* `Perm(n)` – random permutation of 0..n-1
 * `SlicePickOne[T]([]T)`
-* `SlicePickMany([]any, chanceThreshold int)` draws a value 0..100 inclusive
-  for each item and includes it when `value <= threshold`.
+* `PickByProbability[T]([]T, p float64)` – picks each item with prob `p`
+  (`SlicePickMany` with 0..100 threshold remains for legacy use)
 
 ### Time
 
@@ -101,15 +124,3 @@ Calendar-correct random datetimes and near-past/future helpers.
 * `Datetime()` → between years 1..9999 (UTC), month/day validity handled
 * `TimeInNearPast()` / `TimeInNearFuture()` → a few minutes around now
 
-## Related package: UUIDs
-
-For UUID helpers (RFC 4122 v4, and more), see the companion module:
-
-```go
-// DEPRECATED: Use github.com/aatuh/randutil/uuid instead
-import "github.com/aatuh/uuid"
-```
-
-Use `uuid.MustV4()` or `uuid.Parse(...)` as needed.
-
-**Note: The uuid package is deprecated. Please use `github.com/aatuh/randutil/uuid` instead.**

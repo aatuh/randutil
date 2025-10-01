@@ -1,13 +1,8 @@
 package numeric
 
 import (
-	"io"
-
-	"github.com/aatuh/randutil/core"
+	"github.com/aatuh/randutil/v2/core"
 )
 
-// readFull wraps io.ReadFull with the active entropy source.
-func readFull(p []byte) error {
-	_, err := io.ReadFull(core.GetSource(), p)
-	return err
-}
+// def is a package-level zero-value generator that uses the live proxy source.
+var def core.Generator // zero-value uses core.Reader()

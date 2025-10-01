@@ -6,8 +6,8 @@ import (
 	"testing"
 	stdtime "time"
 
-	"github.com/aatuh/randutil/core"
-	"github.com/aatuh/randutil/internal/testutil"
+	"github.com/aatuh/randutil/v2/core"
+	"github.com/aatuh/randutil/v2/internal/testutil"
 )
 
 func TestV4DeterministicEntropy(t *testing.T) {

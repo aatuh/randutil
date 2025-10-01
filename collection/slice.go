@@ -1,59 +1,8 @@
 package collection
 
 import (
-	"crypto/rand"
-	"errors"
-	"math/big"
+	"github.com/aatuh/randutil/v2/core"
 )
-
-// Intn returns a uniform random int in [0, n). n must be > 0.
-func Intn(n int) (int, error) {
-	if n <= 0 {
-		return 0, errors.New("n must be > 0")
-	}
-	u, err := Uint64n(uint64(n))
-	if err != nil {
-		return 0, err
-	}
-	return int(u), nil
-}
-
-// Uint64n returns a uniform random integer in [0, n) using rejection
-// sampling to avoid modulo bias. n must be > 0.
-func Uint64n(n uint64) (uint64, error) {
-	if n == 0 {
-		return 0, errors.New("n must be > 0")
-	}
-	var (
-		max   = ^uint64(0)
-		limit = max - (max % n)
-	)
-	for {
-		var b [8]byte
-		if _, err := rand.Read(b[:]); err != nil {
-			return 0, err
-		}
-		u := uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
-			uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
-		if u < limit {
-			return u % n, nil
-		}
-	}
-}
-
-// IntRange returns a secure random int in [minInclusive, maxInclusive].
-func IntRange(minInclusive int, maxInclusive int) (int, error) {
-	if minInclusive > maxInclusive {
-		return 0, errors.New("min value is greater than max value")
-	}
-	diff := int64(maxInclusive) - int64(minInclusive) + 1
-	rng := big.NewInt(diff)
-	n, err := rand.Int(rand.Reader, rng)
-	if err != nil {
-		return 0, err
-	}
-	return int(n.Int64()) + minInclusive, nil
-}
 
 // SlicePickOne returns one random element from the slice.
 // Returns an error if the slice is empty.
@@ -67,9 +16,9 @@ func IntRange(minInclusive int, maxInclusive int) (int, error) {
 func SlicePickOne[T any](slice []T) (T, error) {
 	if len(slice) == 0 {
 		var zero T
-		return zero, errors.New("cannot pick from empty slice")
+		return zero, core.ErrEmptySlice
 	}
-	idx, err := Intn(len(slice))
+	idx, err := Default.G.Intn(len(slice))
 	if err != nil {
 		var zero T
 		return zero, err
@@ -93,48 +42,6 @@ func MustSlicePickOne[T any](slice []T) T {
 	return item
 }
 
-// SlicePickMany returns a subset of items from the slice. For each item,
-// a random chance is compared with chanceThreshold (0-100) to decide if
-// it should be included.
-//
-// Parameters:
-//   - slice: A slice of any type.
-//   - chanceThreshold: An integer between 0 and 100.
-//
-// Returns:
-//   - []T: A slice of the same type as input.
-//   - error: An error if entropy fails.
-func SlicePickMany[T any](slice []T, chanceThreshold int) ([]T, error) {
-	var picked []T
-	for _, item := range slice {
-		dice, err := IntRange(0, 100)
-		if err != nil {
-			return nil, err
-		}
-		if dice <= chanceThreshold {
-			picked = append(picked, item)
-		}
-	}
-	return picked, nil
-}
-
-// MustSlicePickMany returns a subset of items from the slice.
-// It panics if an error occurs.
-//
-// Parameters:
-//   - slice: A slice of any type.
-//   - chanceThreshold: An integer between 0 and 100.
-//
-// Returns:
-//   - []T: A slice of the same type as input.
-func MustSlicePickMany[T any](slice []T, chanceThreshold int) []T {
-	items, err := SlicePickMany(slice, chanceThreshold)
-	if err != nil {
-		panic(err)
-	}
-	return items
-}
-
 // Shuffle performs an in-place secure Fisher-Yates shuffle of the slice.
 //
 // Parameters:
@@ -145,7 +52,7 @@ func MustSlicePickMany[T any](slice []T, chanceThreshold int) []T {
 func Shuffle[T any](slice []T) error {
 	n := len(slice)
 	for i := n - 1; i > 0; i-- {
-		u, err := Uint64n(uint64(i + 1))
+		u, err := Default.G.Uint64n(uint64(i + 1))
 		if err != nil {
 			return err
 		}
@@ -208,18 +115,18 @@ func MustChoice[T any](choices ...T) T {
 func Sample[T any](s []T, k int) ([]T, error) {
 	n := len(s)
 	if k < 0 {
-		return nil, errors.New("n must be > 0")
+		return nil, core.ErrInvalidN
 	}
 	if k == 0 {
 		return []T{}, nil
 	}
 	if k > n {
-		return nil, errors.New("sample k exceeds size")
+		return nil, core.ErrSampleTooLarge
 	}
 	dup := make([]T, n)
 	copy(dup, s)
 	for i := 0; i < k; i++ {
-		u, err := Uint64n(uint64(n - i))
+		u, err := Default.G.Uint64n(uint64(n - i))
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +163,7 @@ func MustSample[T any](s []T, k int) []T {
 //   - error: An error if entropy fails or n < 0.
 func Perm(n int) ([]int, error) {
 	if n < 0 {
-		return nil, errors.New("n must be > 0")
+		return nil, core.ErrInvalidN
 	}
 	p := make([]int, n)
 	for i := range p {
@@ -268,7 +175,8 @@ func Perm(n int) ([]int, error) {
 	return p, nil
 }
 
-// MustPerm returns a random permutation of the integers [0..n). It panics on error.
+// MustPerm returns a random permutation of the integers [0..n). It panics on
+// error.
 //
 // Parameters:
 //   - n: The upper bound (exclusive) for the permutation.

@@ -26,7 +26,7 @@ func TestIntRangeInvalid(t *testing.T) {
 
 func TestAnyIntInBounds(t *testing.T) {
 	if strconv.IntSize > 32 {
-		t.Skip("AnyInt uses 32-bit math; skip on 64-bit platforms")
+		t.Skip("AnyInt test skipped on 64-bit platforms to avoid large range issues")
 	}
 	v, err := AnyInt()
 	if err != nil {

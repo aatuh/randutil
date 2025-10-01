@@ -1,4 +1,4 @@
-package string
+package randstring
 
 import (
 	"encoding/base64"
@@ -7,20 +7,20 @@ import (
 	"testing"
 )
 
-func TestGetWithCustomCharsetErrors(t *testing.T) {
-	if _, err := GetWithCustomCharset(-1, "abc"); err == nil {
+func TestStringWithCharsetErrors(t *testing.T) {
+	if _, err := StringWithCharset(-1, "abc"); err == nil {
 		t.Fatalf("expected error for negative length")
 	}
-	if _, err := GetWithCustomCharset(1, ""); err == nil {
+	if _, err := StringWithCharset(1, ""); err == nil {
 		t.Fatalf("expected error for empty charset")
 	}
 }
 
-func TestGetWithCustomCharsetUsesCharset(t *testing.T) {
+func TestStringWithCharsetUsesCharset(t *testing.T) {
 	charset := "abc"
-	s, err := GetWithCustomCharset(32, charset)
+	s, err := StringWithCharset(32, charset)
 	if err != nil {
-		t.Fatalf("GetWithCustomCharset error: %v", err)
+		t.Fatalf("StringWithCharset error: %v", err)
 	}
 	if len(s) != 32 {
 		t.Fatalf("length = %d want 32", len(s))
@@ -84,18 +84,5 @@ func TestStringSliceLenRange(t *testing.T) {
 		if len(item) < 3 || len(item) > 6 {
 			t.Fatalf("StringSlice item length %d outside [3,6]", len(item))
 		}
-	}
-}
-
-func TestBytesZeroLength(t *testing.T) {
-	b, err := Bytes(0)
-	if err != nil {
-		t.Fatalf("Bytes error: %v", err)
-	}
-	if len(b) != 0 {
-		t.Fatalf("Bytes length = %d want 0", len(b))
-	}
-	if _, err := Bytes(-1); err == nil {
-		t.Fatalf("expected error for negative Bytes length")
 	}
 }
