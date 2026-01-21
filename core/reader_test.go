@@ -3,6 +3,8 @@ package core
 import (
 	"io"
 	"testing"
+
+	"github.com/aatuh/randutil/v2/internal/testutil"
 )
 
 func TestGeneratorAsReader(t *testing.T) {
@@ -31,5 +33,18 @@ func TestGeneratorAsReader(t *testing.T) {
 	}
 	if allZero {
 		t.Error("Expected some non-zero bytes from random source")
+	}
+}
+
+func TestFillZeroesOnError(t *testing.T) {
+	gen := New(testutil.ErrReader{Err: io.ErrUnexpectedEOF})
+	buf := []byte{1, 2, 3, 4}
+	if err := gen.Fill(buf); err == nil {
+		t.Fatalf("Fill unexpectedly succeeded")
+	}
+	for i, b := range buf {
+		if b != 0 {
+			t.Fatalf("buf[%d]=%d want 0", i, b)
+		}
 	}
 }

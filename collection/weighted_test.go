@@ -1,6 +1,7 @@
 package collection
 
 import (
+	"errors"
 	"math"
 	"sort"
 	"testing"
@@ -44,16 +45,16 @@ func TestWeightedChoiceAndSample(t *testing.T) {
 
 func TestWeightedChoiceErrors(t *testing.T) {
 	items := []string{"a", "b"}
-	if _, err := WeightedChoice(items, []float64{}); err != core.ErrWeightsMismatch {
+	if _, err := WeightedChoice(items, []float64{}); !errors.Is(err, core.ErrWeightsMismatch) {
 		t.Fatalf("expected weights mismatch error, got %v", err)
 	}
 	if _, err := WeightedChoice([]string{}, []float64{}); err == nil {
 		t.Fatalf("expected error for empty items")
 	}
-	if _, err := WeightedChoice(items, []float64{-1, 2}); err != core.ErrInvalidWeights {
+	if _, err := WeightedChoice(items, []float64{-1, 2}); !errors.Is(err, core.ErrInvalidWeights) {
 		t.Fatalf("expected invalid weights, got %v", err)
 	}
-	if _, err := WeightedChoice(items, []float64{0, 0}); err != core.ErrInvalidWeights {
+	if _, err := WeightedChoice(items, []float64{0, 0}); !errors.Is(err, core.ErrInvalidWeights) {
 		t.Fatalf("expected invalid weights for zero sum, got %v", err)
 	}
 }
@@ -81,13 +82,13 @@ func TestWeightedSampleErrors(t *testing.T) {
 	if _, err := WeightedSample([]int{}, []float64{}, 1); err == nil {
 		t.Fatalf("expected error for empty items")
 	}
-	if _, err := WeightedSample(items, []float64{0.5}, 1); err != core.ErrWeightsMismatch {
+	if _, err := WeightedSample(items, []float64{0.5}, 1); !errors.Is(err, core.ErrWeightsMismatch) {
 		t.Fatalf("expected weights mismatch, got %v", err)
 	}
-	if _, err := WeightedSample(items, []float64{-1, 1}, 1); err != core.ErrInvalidWeights {
+	if _, err := WeightedSample(items, []float64{-1, 1}, 1); !errors.Is(err, core.ErrInvalidWeights) {
 		t.Fatalf("expected invalid weights, got %v", err)
 	}
-	if _, err := WeightedSample(items, []float64{0, 0}, 1); err == nil || err != core.ErrInvalidWeights {
+	if _, err := WeightedSample(items, []float64{0, 0}, 1); err == nil || !errors.Is(err, core.ErrInvalidWeights) {
 		t.Fatalf("expected invalid weights error, got %v", err)
 	}
 }

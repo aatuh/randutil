@@ -1,8 +1,8 @@
 package numeric
 
-import (
-	"github.com/aatuh/randutil/v2/core"
-)
+var defaultGenerator = New(nil)
 
-// def is a package-level zero-value generator that uses the live proxy source.
-var def core.Generator // zero-value uses core.Reader()
+// Default returns the package-wide default generator.
+func Default() *Generator {
+	return defaultGenerator
+}

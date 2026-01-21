@@ -1,27 +1,11 @@
 package uuid
 
-import (
-	"errors"
-	"regexp"
-)
-
 // UUID is a lower-case canonical textual UUID.
 type UUID string
 
-// We keep two regexes:
-// - reCanon accepts canonical 8-4-4-4-12 with either hex case.
-// - reLower asserts our canonical lower-case invariant.
-var (
-	reCanon = regexp.MustCompile(
-		`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-` +
-			`[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`,
-	)
-	reLower = regexp.MustCompile(
-		`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-` +
-			`[0-9a-f]{4}-[0-9a-f]{12}$`,
-	)
-	nilUUID = UUID("00000000-0000-0000-0000-000000000000")
-)
+const canonicalLen = 36
+
+var nilUUID = UUID("00000000-0000-0000-0000-000000000000")
 
 // V4 returns a RFC 4122, variant 1 UUID v4.
 // It reads 16 bytes, then sets version and variant bits.
@@ -30,7 +14,7 @@ var (
 //   - UUID: A random UUID conforming to Version 4 and Variant 1.
 //   - error: An error if crypto/rand fails.
 func V4() (UUID, error) {
-	return Default.V4()
+	return Default().V4()
 }
 
 // MustV4 returns a v4 UUID or panics.
@@ -52,7 +36,7 @@ func MustV4() UUID {
 //   - UUID: A random UUID conforming to Version 7 and Variant 1.
 //   - error: An error if crypto/rand fails.
 func V7() (UUID, error) {
-	return Default.V7()
+	return Default().V7()
 }
 
 // MustV7 returns a v7 UUID or panics.
@@ -77,8 +61,8 @@ func MustV7() UUID {
 //   - UUID: A lower-case UUID.
 //   - error: An error if the string is invalid.
 func Parse(s string) (UUID, error) {
-	if !reCanon.MatchString(s) {
-		return "", errors.New("invalid UUID format")
+	if !isCanonicalUUID(s, true) {
+		return "", ErrInvalidFormat
 	}
 	return UUID(toLowerASCII(s)), nil
 }
@@ -135,56 +119,74 @@ func (u UUID) String() string { return string(u) }
 func (u UUID) Bytes() ([16]byte, error) {
 	var out [16]byte
 	s := string(u)
-	if !reLower.MatchString(s) {
-		return out, errors.New("invalid UUID")
+	if !isCanonicalUUID(s, false) {
+		return out, ErrInvalidUUID
 	}
 	// Decode two hex nibbles at a time, skipping hyphens.
-	di := 0 // dest index in out
-	for i := 0; i < len(s); {
-		if s[i] == '-' {
-			i++
-			continue
+	si := 0 // source index
+	for di := range out {
+		for si < len(s) && s[si] == '-' {
+			si++
 		}
-		if i+1 >= len(s) || di >= 16 {
-			return out, errors.New("invalid UUID length")
-		}
-		hi := fromHexNibble(s[i])
-		lo := fromHexNibble(s[i+1])
+		hi := fromHexNibble(s[si])
+		lo := fromHexNibble(s[si+1])
 		if hi == 255 || lo == 255 {
-			return out, errors.New("invalid UUID hex")
+			return out, ErrInvalidUUID
 		}
+		// #nosec G602 -- di is bounded by range over out.
 		out[di] = (hi << 4) | lo
-		di++
-		i += 2
-	}
-	if di != 16 {
-		return out, errors.New("invalid UUID length")
+		si += 2
 	}
 	return out, nil
 }
 
 // fromBytes formats a 16-byte slice into canonical lower-case string.
 func fromBytes(b []byte) UUID {
-	dst := make([]byte, 36)
-	// Hyphen positions.
-	hy := map[int]struct{}{8: {}, 13: {}, 18: {}, 23: {}}
-	si, di := 0, 0
-	for di < 36 {
-		if _, ok := hy[di]; ok {
+	var dst [36]byte
+	di := 0
+	for i := 0; i < 16; i++ {
+		if di == 8 || di == 13 || di == 18 || di == 23 {
 			dst[di] = '-'
 			di++
-			continue
 		}
-		dst[di], dst[di+1] = hexHiLo(b[si])
-		si++
+		hi, lo := hexHiLo(b[i])
+		dst[di] = hi
+		dst[di+1] = lo
 		di += 2
 	}
-	return UUID(string(dst))
+	return UUID(string(dst[:]))
 }
 
 func hexHiLo(v byte) (byte, byte) {
 	const hex = "0123456789abcdef"
 	return hex[v>>4], hex[v&0x0f]
+}
+
+func isCanonicalUUID(s string, allowUpper bool) bool {
+	if len(s) != canonicalLen {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		switch i {
+		case 8, 13, 18, 23:
+			if s[i] != '-' {
+				return false
+			}
+		default:
+			c := s[i]
+			if '0' <= c && c <= '9' {
+				continue
+			}
+			if 'a' <= c && c <= 'f' {
+				continue
+			}
+			if allowUpper && 'A' <= c && c <= 'F' {
+				continue
+			}
+			return false
+		}
+	}
+	return true
 }
 
 func toLowerASCII(s string) string {

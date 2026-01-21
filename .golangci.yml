@@ -10,6 +10,8 @@ linters:
     - unused
     - staticcheck
     - revive
+    - gosec
+    - errorlint
 
 issues:
   exclude-use-default: false

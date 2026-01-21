@@ -3,6 +3,9 @@ package randtime
 import (
 	"testing"
 	stdtime "time"
+
+	"github.com/aatuh/randutil/v2/core"
+	"github.com/aatuh/randutil/v2/internal/testutil"
 )
 
 func TestDatetimeBounds(t *testing.T) {
@@ -50,6 +53,30 @@ func TestTimeInNearPastFuture(t *testing.T) {
 	}
 	if delta := future.Sub(now); delta < minDelta || delta > maxDelta {
 		t.Fatalf("TimeInNearFuture delta %v outside expected range", delta)
+	}
+}
+
+func TestTimeInNearPastFutureWithClock(t *testing.T) {
+	fixed := stdtime.Date(2024, 1, 2, 3, 4, 5, 0, stdtime.UTC)
+	src := testutil.NewSeqReader([]byte{0})
+	gen := NewWithClock(core.New(src), func() stdtime.Time { return fixed })
+
+	past, err := gen.TimeInNearPast()
+	if err != nil {
+		t.Fatalf("TimeInNearPast error: %v", err)
+	}
+	wantPast := fixed.Add(-5 * stdtime.Minute)
+	if !past.Equal(wantPast) {
+		t.Fatalf("TimeInNearPast=%v want %v", past, wantPast)
+	}
+
+	future, err := gen.TimeInNearFuture()
+	if err != nil {
+		t.Fatalf("TimeInNearFuture error: %v", err)
+	}
+	wantFuture := fixed.Add(5 * stdtime.Minute)
+	if !future.Equal(wantFuture) {
+		t.Fatalf("TimeInNearFuture=%v want %v", future, wantFuture)
 	}
 }
 

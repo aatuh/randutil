@@ -11,8 +11,8 @@ import (
 
 func TestBytesAndFill(t *testing.T) {
 	src := testutil.NewSeqReader([]byte{9, 8, 7, 6, 5})
-	testutil.WithSource(t, src)
-	data, err := Bytes(4)
+	gen := New(core.New(src))
+	data, err := gen.Bytes(4)
 	if err != nil {
 		t.Fatalf("Bytes error: %v", err)
 	}
@@ -21,7 +21,7 @@ func TestBytesAndFill(t *testing.T) {
 		t.Fatalf("Bytes = %v want %v", data, want)
 	}
 	buf := make([]byte, 3)
-	if err := Fill(buf); err != nil {
+	if err := gen.Fill(buf); err != nil {
 		t.Fatalf("Fill error: %v", err)
 	}
 	expected := []byte{5, 5, 5}
@@ -31,20 +31,21 @@ func TestBytesAndFill(t *testing.T) {
 }
 
 func TestBytesInvalidLength(t *testing.T) {
-	if _, err := Bytes(-1); !errors.Is(err, core.ErrInvalidN) {
-		t.Fatalf("Bytes(-1) error = %v want %v", err, core.ErrInvalidN)
+	gen := New(core.New(testutil.NewSeqReader()))
+	if _, err := gen.Bytes(-1); !errors.Is(err, core.ErrNegativeLength) {
+		t.Fatalf("Bytes(-1) error = %v want %v", err, core.ErrNegativeLength)
 	}
 }
 
 func TestMustBytesPanicOnError(t *testing.T) {
 	errSrc := testutil.ErrReader{Err: io.ErrUnexpectedEOF}
-	testutil.WithSource(t, errSrc)
+	gen := New(core.New(errSrc))
 	defer func() {
 		if recover() == nil {
 			t.Fatalf("MustBytes did not panic")
 		}
 	}()
-	MustBytes(1)
+	gen.MustBytes(1)
 }
 
 func equalBytes(a, b []byte) bool {

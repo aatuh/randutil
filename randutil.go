@@ -1,31 +1,34 @@
 package randutil
 
 import (
-	"io"
-
 	"github.com/aatuh/randutil/v2/collection"
 	"github.com/aatuh/randutil/v2/core"
+	"github.com/aatuh/randutil/v2/dist"
 	"github.com/aatuh/randutil/v2/email"
+	"github.com/aatuh/randutil/v2/numeric"
 	"github.com/aatuh/randutil/v2/randstring"
 	"github.com/aatuh/randutil/v2/randtime"
 	"github.com/aatuh/randutil/v2/uuid"
 )
 
-// Rand provides access to all default generators from the subpackages,
-// bound to a single entropy source. This eliminates the need to
-// duplicate all the methods from each subpackage.
+// Rand provides access to generators from the subpackages, bound to a single
+// entropy source. This eliminates the need to duplicate all the methods from
+// each subpackage.
 type Rand struct {
 	// Core provides basic random number generation primitives.
 	Core *core.Generator
+
+	// Numeric provides numeric helpers (ranges, ints, bytes).
+	Numeric *numeric.Generator
+
+	// Dist provides statistical distributions.
+	Dist *dist.Generator
 
 	// String provides random string and token generation.
 	String *randstring.Generator
 
 	// UUID provides UUID v4 and v7 generation.
 	UUID *uuid.Generator
-
-	// Collection provides slice operations like shuffle and sampling.
-	Collection *collection.Generator
 
 	// Time provides random datetime generation.
 	Time *randtime.Generator
@@ -35,61 +38,49 @@ type Rand struct {
 }
 
 // New returns a Rand with all generators bound to src. Pass nil to use
-// crypto/rand via the package default.
+// crypto/rand.
 //
 // Parameters:
 //   - src: The entropy source to use.
 //
 // Returns:
 //   - Rand: A new Rand with all generators bound to src.
-func New(src io.Reader) Rand {
+func New(src core.Source) Rand {
 	coreGen := core.New(src)
 	return Rand{
-		Core:       coreGen,
-		String:     randstring.New(src),
-		UUID:       uuid.New(src),
-		Collection: collection.New(src),
-		Time:       randtime.New(src),
-		Email:      email.New(src),
+		Core:    coreGen,
+		Numeric: numeric.New(coreGen),
+		Dist:    dist.New(coreGen),
+		String:  randstring.New(coreGen),
+		UUID:    uuid.New(coreGen),
+		Time:    randtime.New(coreGen),
+		Email:   email.New(coreGen),
 	}
 }
 
-// Default returns a Rand using the current secure source
-// (crypto/rand by default).
+// Default returns a Rand using crypto/rand.
 //
 // Returns:
-//   - Rand: A new Rand using the current secure source.
+//   - Rand: A new Rand using crypto/rand.
 func Default() Rand { return New(nil) }
 
 // Secure is an alias for Default, provided for clarity when the
 // caller wants to emphasize security properties.
 //
 // Returns:
-//   - Rand: A new Rand using the current secure source.
+//   - Rand: A new Rand using crypto/rand.
 func Secure() Rand { return Default() }
 
-// Reader exposes the underlying entropy source.
+// Source exposes the underlying entropy source.
 //
 // Returns:
-//   - io.Reader: The current entropy source.
-func (r Rand) Reader() io.Reader { return r.Core }
+//   - core.Source: The underlying entropy source.
+func (r Rand) Source() core.Source { return r.Core.Source() }
 
-// Global convenience accessors.
-
-// String provides access to the default string generator.
-var String = randstring.Default
-
-// UUID provides access to the default UUID generator.
-var UUID = uuid.Default
-
-// Collection provides access to the default collection generator.
-var Collection = collection.Default
-
-// Time provides access to the default time generator.
-var Time = randtime.Default
-
-// Email provides access to the default email generator.
-var Email = email.Default
-
-// Core provides access to the default core generator.
-var Core = core.New(nil)
+// Collection returns a collection generator bound to this Rand's RNG.
+func Collection[T any](r Rand) *collection.Generator[T] {
+	if r.Core == nil {
+		return collection.New[T](nil)
+	}
+	return collection.New[T](r.Core)
+}

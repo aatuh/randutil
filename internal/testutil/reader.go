@@ -3,12 +3,8 @@ package testutil
 import (
 	"encoding/binary"
 	"errors"
-	"io"
 	"math"
 	"sync"
-	"testing"
-
-	"github.com/aatuh/randutil/v2/core"
 )
 
 // SeqReader feeds deterministic entropy to crypto consumers. It returns
@@ -64,7 +60,7 @@ type ErrReader struct {
 }
 
 // Read implements io.Reader.
-func (e ErrReader) Read(p []byte) (int, error) {
+func (e ErrReader) Read(_ []byte) (int, error) {
 	if e.Err == nil {
 		return 0, errors.New("ErrReader: nil error supplied")
 	}
@@ -97,11 +93,4 @@ func Uint64Bytes(u uint64) []byte {
 	var buf [8]byte
 	binary.LittleEndian.PutUint64(buf[:], u)
 	return buf[:]
-}
-
-// WithSource sets the entropy source for testing and restores it on cleanup.
-func WithSource(t *testing.T, r io.Reader) {
-	t.Helper()
-	core.SetSource(r)
-	t.Cleanup(core.ResetSource)
 }

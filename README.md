@@ -1,14 +1,16 @@
 # randutil
 
-CSPRNG-first random utilities for Go. One small package that does the
-common random things: bias-free integers, bytes, strings/tokens, emails,
-shuffle/sample for slices, and realistic date/time helpers.
+CSPRNG-first random utilities for Go. Small, composable generators with
+bias-free numeric helpers, strings/tokens, distributions, UUIDs, and
+sampling utilities.
 
 ## Install
 
 ```bash
 go get github.com/aatuh/randutil/v2
 ```
+
+Requires Go 1.24+.
 
 ## Quick start
 
@@ -18,109 +20,100 @@ package main
 import (
   "fmt"
 
-  "github.com/aatuh/randutil/v2/numeric"
-  "github.com/aatuh/randutil/v2/collection"
-  "github.com/aatuh/randutil/v2/randstring"
-  "github.com/aatuh/randutil/v2/email"
-  "github.com/aatuh/randutil/v2/randtime"
-  "github.com/aatuh/randutil/v2/uuid"
+  "github.com/aatuh/randutil/v2"
 )
 
 func main() {
-  // Numbers
-  n := numeric.MustIntRange(10, 20)     // inclusive
-  f := numeric.MustFloat64()            // [0,1)
-  b := numeric.MustBytes(16)            // 16 random bytes
-  ok := numeric.MustBool()
+  r := randutil.Default()
 
-  // Strings / tokens
-  s   := randstring.MustString(12)                  // lower-case alnum
-  hex := randstring.MustHex(32)                     // 32 hex chars (16 bytes)
-  b64 := randstring.MustBase64(24)                  // encodes 24 random bytes
-  tok := randstring.MustTokenURLSafe(24)            // URL-safe base64
-  
-  // Email addresses
-  mail := email.MustEmailSimple(16)                 // exact-length local@domain.com
-  mail2 := email.MustEmail(email.EmailOptions{TLD: "org"}) // options
+  b := r.Numeric.MustBytes(16)
+  tok := r.String.MustTokenURLSafe(24)
+  u4 := r.UUID.MustV4()
+  when := r.Time.MustDatetime()
 
-  // Collections
-  arr := []int{1,2,3,4,5}
-  collection.MustShuffle(arr)                       // in-place Fisher–Yates
-  top2 := collection.MustSample(arr, 2)             // k without replacement
-  pick := collection.MustSlicePickOne(arr)
-  pickedMany := collection.MustPickByProbability([]string{"a","b","c"}, 0.5)
-
-  // Time
-  t  := randtime.MustDatetime()
-  p  := randtime.MustTimeInNearPast()
-  fu := randtime.MustTimeInNearFuture()
-
-  // UUIDs
-  u4 := uuid.MustV4()
-  u7 := uuid.MustV7()
-
-  fmt.Println(n, f, len(b), ok, s, hex, b64, tok, mail, mail2, arr, top2, pick, pickedMany, t, p, fu, u4, u7)
+  fmt.Println(len(b), tok, u4, when)
 }
 ```
 
-Note: Every `MustX(...)` has a non-panicking `X(...)` variant that returns
-`(T, error)` for use in servers/CLIs where you want to handle errors.
+## Deterministic testing
 
-## API overview
+Use a deterministic source and pass it into `core.New`, then share the RNG
+across generators:
 
-### Numbers
+```go
+package main
 
-Uniform integers without modulo bias (rejection sampling under the hood),
-`[0,1)` float64, and byte helpers. Range functions are inclusive.
+import (
+  "fmt"
 
-* `Uint64()`
-* `Uint64n(n uint64)` → \[0,n)
-* `Intn(n int)`, `Int64n(n int64)` → \[0,n)
-* `IntRange(min, max)`, `Int32Range`, `Int64Range` (inclusive)
-* `AnyInt*`, `Positive*`, `Negative*`
-* `Float64()`
-* `Bytes(n)`, `Fill(b)`
+  "github.com/aatuh/randutil/v2/adapters"
+  "github.com/aatuh/randutil/v2/core"
+  "github.com/aatuh/randutil/v2/randstring"
+)
 
-### Booleans
+func main() {
+  rng := core.New(adapters.DeterministicSource([]byte("seed")))
+  gen := randstring.New(rng)
 
-* `Bool()` / `MustBool()`
+  s, _ := gen.String(12)
+  fmt.Println(s)
+}
+```
 
-### Strings & tokens
+For exact byte control in tests, pass a custom `io.Reader` into `core.New`.
 
-Lower-case alnum by default; hex/base64 helpers.
+## Security model
 
-* `String(n)` and `StringWithCharset(n, charset)`
-* `Hex(len)` where `len` must be even (2 chars per byte)
-* `Base64(byteLen)`, `TokenHex(byteLen)`, `TokenBase64(byteLen)`,
-  `TokenURLSafe(byteLen)`
+- Default entropy is `crypto/rand.Reader`.
+- No process-wide mutable state; each generator binds its own source/RNG.
+- Unbiased sampling (rejection sampling for ranges/charsets).
+- Token string helpers return immutable strings; use `Token*Bytes` when secrets must be wipeable.
+- Deterministic sources are for testing and benchmarks only.
 
-### Email addresses
+If your source or RNG is not thread-safe, wrap it with
+`adapters.LockedSource` or `adapters.LockedRNG`.
 
-Random email generation with customizable local parts, domains, and TLDs.
+## Common recipes
 
-* `Email(opts)` - Full control with EmailOptions
-* `EmailSimple(totalLength)` - Legacy exact-length emails
-* `EmailWithCustomLocal(localPart)`
-* `EmailWithCustomDomain(domainPart)`
-* `EmailWithCustomTLD(tld)`
-* `EmailWithRandomTLD()`
-* `EmailWithoutTLD()`
+URL-safe token:
 
-### Collections (slices)
+```go
+s := randstring.MustTokenURLSafe(24) // ~32 chars, URL-safe
+```
 
-Unbiased Fisher–Yates shuffle, sampling without replacement, and simple picks.
+Range and sampling:
 
-* `Shuffle[T]([]T)`
-* `Sample[T]([]T, k)` – returns a new slice, no duplicates
-* `Perm(n)` – random permutation of 0..n-1
-* `SlicePickOne[T]([]T)`
-* `PickByProbability[T]([]T, p float64)` – picks each item with prob `p`
-  (`SlicePickMany` with 0..100 threshold remains for legacy use)
+```go
+n := numeric.MustIntRange(10, 20) // inclusive
+arr := []int{1, 2, 3, 4, 5}
+collection.MustShuffle(arr)
+subset := collection.MustSample(arr, 2)
+```
 
-### Time
+UUIDs:
 
-Calendar-correct random datetimes and near-past/future helpers.
+```go
+u4 := uuid.MustV4()
+u7 := uuid.MustV7()
+```
 
-* `Datetime()` → between years 1..9999 (UTC), month/day validity handled
-* `TimeInNearPast()` / `TimeInNearFuture()` → a few minutes around now
+Distributions:
 
+```go
+x := dist.MustNormal(0, 1)
+k := dist.MustPoisson(12)
+```
+
+Email:
+
+```go
+mail := email.MustEmail(email.Options{TLD: "org"})
+```
+
+## Notes
+
+Every `MustX(...)` has a non-panicking `X(...)` variant that returns
+`(T, error)` for server/CLI contexts.
+
+The `example_test.go` file contains executable examples that appear in
+`godoc` and are run by `go test` to prevent documentation drift.

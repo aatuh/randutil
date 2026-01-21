@@ -1,22 +1,47 @@
 package randtime
 
 import (
-	"io"
 	"time"
 
 	"github.com/aatuh/randutil/v2/core"
 )
 
-// Generator builds random time values using a core generator.
+// Generator builds random time values using a core RNG.
+//
+// Concurrency: safe for concurrent use if the underlying RNG is safe.
 type Generator struct {
-	G core.Generator
+	rng core.RNG
+	now func() time.Time
 }
 
-// New returns a time Generator. If src is nil, the core default is used.
-func New(src io.Reader) *Generator { return &Generator{G: core.Generator{R: src}} }
+// New returns a time Generator. If rng is nil, crypto/rand is used.
+func New(rng core.RNG) *Generator {
+	return NewWithClock(rng, time.Now)
+}
 
-// Default is the package-wide default generator.
-var Default = New(nil)
+// NewWithClock returns a time Generator bound to rng and clock.
+// If rng is nil, crypto/rand is used. If now is nil, time.Now is used.
+func NewWithClock(rng core.RNG, now func() time.Time) *Generator {
+	if rng == nil {
+		rng = core.New(nil)
+	}
+	if now == nil {
+		now = time.Now
+	}
+	return &Generator{rng: rng, now: now}
+}
+
+// NewWithSource returns a time Generator bound to src.
+func NewWithSource(src core.Source) *Generator {
+	return NewWithClock(core.New(src), time.Now)
+}
+
+var defaultGenerator = New(nil)
+
+// Default returns the package-wide default generator.
+func Default() *Generator {
+	return defaultGenerator
+}
 
 // Datetime returns a secure random time between year 1 and 9999.
 //
@@ -24,32 +49,32 @@ var Default = New(nil)
 //   - time.Time: A random time between year 1 and 9999.
 //   - error: An error if entropy fails.
 func (g *Generator) Datetime() (time.Time, error) {
-	year, err := g.G.IntRange(1, 9999)
+	year, err := g.rng.IntRange(1, 9999)
 	if err != nil {
 		return time.Time{}, err
 	}
-	monthInt, err := g.G.IntRange(1, 12)
+	monthInt, err := g.rng.IntRange(1, 12)
 	if err != nil {
 		return time.Time{}, err
 	}
 	month := time.Month(monthInt)
-	day, err := g.G.IntRange(1, daysInMonth(year, month))
+	day, err := g.rng.IntRange(1, daysInMonth(year, month))
 	if err != nil {
 		return time.Time{}, err
 	}
-	hour, err := g.G.IntRange(0, 23)
+	hour, err := g.rng.IntRange(0, 23)
 	if err != nil {
 		return time.Time{}, err
 	}
-	minute, err := g.G.IntRange(0, 59)
+	minute, err := g.rng.IntRange(0, 59)
 	if err != nil {
 		return time.Time{}, err
 	}
-	second, err := g.G.IntRange(0, 59)
+	second, err := g.rng.IntRange(0, 59)
 	if err != nil {
 		return time.Time{}, err
 	}
-	nano, err := g.G.IntRange(0, int(time.Second)-1)
+	nano, err := g.rng.IntRange(0, int(time.Second)-1)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -63,12 +88,11 @@ func (g *Generator) Datetime() (time.Time, error) {
 //   - time.Time: A random time 5-10 minutes in the past.
 //   - error: An error if entropy fails.
 func (g *Generator) TimeInNearPast() (time.Time, error) {
-	offset, err := g.G.IntRange(5, 10)
+	offset, err := g.rng.IntRange(5, 10)
 	if err != nil {
 		return time.Time{}, err
 	}
-	return time.Now().UTC().Add(-time.Minute *
-		time.Duration(offset)), nil
+	return g.nowUTC().Add(-time.Minute * time.Duration(offset)), nil
 }
 
 // TimeInNearFuture returns a time a few minutes in the future.
@@ -77,12 +101,18 @@ func (g *Generator) TimeInNearPast() (time.Time, error) {
 //   - time.Time: A random time 5-10 minutes in the future.
 //   - error: An error if entropy fails.
 func (g *Generator) TimeInNearFuture() (time.Time, error) {
-	offset, err := g.G.IntRange(5, 10)
+	offset, err := g.rng.IntRange(5, 10)
 	if err != nil {
 		return time.Time{}, err
 	}
-	return time.Now().UTC().Add(time.Minute *
-		time.Duration(offset)), nil
+	return g.nowUTC().Add(time.Minute * time.Duration(offset)), nil
+}
+
+func (g *Generator) nowUTC() time.Time {
+	if g == nil || g.now == nil {
+		return time.Now().UTC()
+	}
+	return g.now().UTC()
 }
 
 // daysInMonth returns the number of days in the given month of year.

@@ -15,9 +15,8 @@ func TestV4DeterministicEntropy(t *testing.T) {
 	for i := range data {
 		data[i] = byte(i)
 	}
-	core.SetSource(testutil.NewSeqReader(data))
-	t.Cleanup(core.ResetSource)
-	u, err := V4()
+	gen := New(core.New(testutil.NewSeqReader(data)))
+	u, err := gen.V4()
 	if err != nil {
 		t.Fatalf("V4 error: %v", err)
 	}
@@ -37,9 +36,8 @@ func TestV4DeterministicEntropy(t *testing.T) {
 }
 
 func TestV4ErrorPropagation(t *testing.T) {
-	core.SetSource(testutil.ErrReader{Err: errors.New("entropy failure")})
-	t.Cleanup(core.ResetSource)
-	if _, err := V4(); err == nil {
+	gen := New(core.New(testutil.ErrReader{Err: errors.New("entropy failure")}))
+	if _, err := gen.V4(); err == nil {
 		t.Fatalf("expected error when entropy fails")
 	}
 	defer func() {
@@ -47,14 +45,13 @@ func TestV4ErrorPropagation(t *testing.T) {
 			t.Fatalf("MustV4 did not panic on entropy failure")
 		}
 	}()
-	MustV4()
+	gen.MustV4()
 }
 
 func TestV7Structure(t *testing.T) {
-	core.SetSource(testutil.NewSeqReader(make([]byte, 16)))
-	t.Cleanup(core.ResetSource)
+	gen := New(core.New(testutil.NewSeqReader(make([]byte, 16))))
 	before := stdtime.Now().UTC()
-	u, err := V7()
+	u, err := gen.V7()
 	if err != nil {
 		t.Fatalf("V7 error: %v", err)
 	}
@@ -73,6 +70,25 @@ func TestV7Structure(t *testing.T) {
 	now := stdtime.Now().UTC()
 	if ts < before.UnixMilli() || ts > now.UnixMilli() {
 		t.Fatalf("timestamp %d not within bounds [%d,%d]", ts, before.UnixMilli(), now.UnixMilli())
+	}
+}
+
+func TestV7WithClock(t *testing.T) {
+	fixed := stdtime.Date(2024, 1, 2, 3, 4, 5, 0, stdtime.UTC)
+	gen := NewWithClock(core.New(testutil.NewSeqReader(make([]byte, 16))),
+		func() stdtime.Time { return fixed })
+	u, err := gen.V7()
+	if err != nil {
+		t.Fatalf("V7 error: %v", err)
+	}
+	bytes, err := u.Bytes()
+	if err != nil {
+		t.Fatalf("Bytes error: %v", err)
+	}
+	ts := int64(bytes[0])<<40 | int64(bytes[1])<<32 | int64(bytes[2])<<24 |
+		int64(bytes[3])<<16 | int64(bytes[4])<<8 | int64(bytes[5])
+	if ts != fixed.UnixMilli() {
+		t.Fatalf("timestamp %d want %d", ts, fixed.UnixMilli())
 	}
 }
 
@@ -97,12 +113,9 @@ func TestParseAndMustParse(t *testing.T) {
 
 func TestUUIDBytesValidation(t *testing.T) {
 	u := UUID("00000000-0000-0000-0000-000000000000")
-	b, err := u.Bytes()
+	_, err := u.Bytes()
 	if err != nil {
 		t.Fatalf("Bytes error: %v", err)
-	}
-	if len(b) != 16 {
-		t.Fatalf("Bytes length = %d want 16", len(b))
 	}
 	if _, err := UUID("00000000-0000-0000-0000-00000000000G").Bytes(); err == nil {
 		t.Fatalf("expected error for invalid hex")

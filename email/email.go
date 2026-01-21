@@ -3,24 +3,24 @@ package email
 // Email returns a random email address with the specified options.
 //
 // Parameters:
-//   - opts: EmailOptions configuring the email generation behavior.
+//   - opts: Options configuring the email generation behavior.
 //
 // Returns:
 //   - string: A random email address.
 //   - error: An error if generation fails.
-func Email(opts EmailOptions) (string, error) {
-	return Default.Email(opts)
+func Email(opts Options) (string, error) {
+	return Default().Email(opts)
 }
 
 // MustEmail returns a random email address with the specified options.
 // It panics if an error occurs.
 //
 // Parameters:
-//   - opts: EmailOptions configuring the email generation behavior.
+//   - opts: Options configuring the email generation behavior.
 //
 // Returns:
 //   - string: A random email address.
-func MustEmail(opts EmailOptions) string {
+func MustEmail(opts Options) string {
 	result, err := Email(opts)
 	if err != nil {
 		panic(err)
@@ -28,7 +28,7 @@ func MustEmail(opts EmailOptions) string {
 	return result
 }
 
-// EmailSimple returns a random email of exactly totalLength chars in the form
+// Simple returns a random email of exactly totalLength chars in the form
 // local@domain.com (5 chars reserved for "@" + ".com"). This is the legacy
 // behavior for backward compatibility.
 //
@@ -38,11 +38,11 @@ func MustEmail(opts EmailOptions) string {
 // Returns:
 //   - string: A random email address of the specified length.
 //   - error: An error if totalLength is too small or if generation fails.
-func EmailSimple(totalLength int) (string, error) {
-	return Default.EmailSimple(totalLength)
+func Simple(totalLength int) (string, error) {
+	return Default().Simple(totalLength)
 }
 
-// MustEmailSimple returns a random email of exactly totalLength chars.
+// MustSimple returns a random email of exactly totalLength chars.
 // It panics if an error occurs.
 //
 // Parameters:
@@ -50,15 +50,15 @@ func EmailSimple(totalLength int) (string, error) {
 //
 // Returns:
 //   - string: A random email address of the specified length.
-func MustEmailSimple(totalLength int) string {
-	result, err := EmailSimple(totalLength)
+func MustSimple(totalLength int) string {
+	result, err := Simple(totalLength)
 	if err != nil {
 		panic(err)
 	}
 	return result
 }
 
-// EmailWithCustomLocal returns a random email with the specified local part.
+// WithCustomLocal returns a random email with the specified local part.
 //
 // Parameters:
 //   - localPart: The local part of the email address.
@@ -66,11 +66,11 @@ func MustEmailSimple(totalLength int) string {
 // Returns:
 //   - string: A random email address with the specified local part.
 //   - error: An error if generation fails.
-func EmailWithCustomLocal(localPart string) (string, error) {
-	return Email(EmailOptions{LocalPart: localPart})
+func WithCustomLocal(localPart string) (string, error) {
+	return Email(Options{LocalPart: localPart})
 }
 
-// MustEmailWithCustomLocal returns a random email with the specified local part.
+// MustWithCustomLocal returns a random email with the specified local part.
 // It panics if an error occurs.
 //
 // Parameters:
@@ -78,15 +78,15 @@ func EmailWithCustomLocal(localPart string) (string, error) {
 //
 // Returns:
 //   - string: A random email address with the specified local part.
-func MustEmailWithCustomLocal(localPart string) string {
-	result, err := EmailWithCustomLocal(localPart)
+func MustWithCustomLocal(localPart string) string {
+	result, err := WithCustomLocal(localPart)
 	if err != nil {
 		panic(err)
 	}
 	return result
 }
 
-// EmailWithCustomDomain returns a random email with the specified domain part.
+// WithCustomDomain returns a random email with the specified domain part.
 //
 // Parameters:
 //   - domainPart: The domain part of the email address.
@@ -94,11 +94,11 @@ func MustEmailWithCustomLocal(localPart string) string {
 // Returns:
 //   - string: A random email address with the specified domain part.
 //   - error: An error if generation fails.
-func EmailWithCustomDomain(domainPart string) (string, error) {
-	return Email(EmailOptions{DomainPart: domainPart})
+func WithCustomDomain(domainPart string) (string, error) {
+	return Email(Options{DomainPart: domainPart})
 }
 
-// MustEmailWithCustomDomain returns a random email with the specified domain part.
+// MustWithCustomDomain returns a random email with the specified domain part.
 // It panics if an error occurs.
 //
 // Parameters:
@@ -106,15 +106,15 @@ func EmailWithCustomDomain(domainPart string) (string, error) {
 //
 // Returns:
 //   - string: A random email address with the specified domain part.
-func MustEmailWithCustomDomain(domainPart string) string {
-	result, err := EmailWithCustomDomain(domainPart)
+func MustWithCustomDomain(domainPart string) string {
+	result, err := WithCustomDomain(domainPart)
 	if err != nil {
 		panic(err)
 	}
 	return result
 }
 
-// EmailWithCustomTLD returns a random email with the specified TLD.
+// WithCustomTLD returns a random email with the specified TLD.
 //
 // Parameters:
 //   - tld: The top-level domain (with or without leading dot).
@@ -122,11 +122,11 @@ func MustEmailWithCustomDomain(domainPart string) string {
 // Returns:
 //   - string: A random email address with the specified TLD.
 //   - error: An error if generation fails.
-func EmailWithCustomTLD(tld string) (string, error) {
-	return Email(EmailOptions{TLD: tld})
+func WithCustomTLD(tld string) (string, error) {
+	return Email(Options{TLD: tld})
 }
 
-// MustEmailWithCustomTLD returns a random email with the specified TLD.
+// MustWithCustomTLD returns a random email with the specified TLD.
 // It panics if an error occurs.
 //
 // Parameters:
@@ -134,52 +134,52 @@ func EmailWithCustomTLD(tld string) (string, error) {
 //
 // Returns:
 //   - string: A random email address with the specified TLD.
-func MustEmailWithCustomTLD(tld string) string {
-	result, err := EmailWithCustomTLD(tld)
+func MustWithCustomTLD(tld string) string {
+	result, err := WithCustomTLD(tld)
 	if err != nil {
 		panic(err)
 	}
 	return result
 }
 
-// EmailWithRandomTLD returns a random email with a random TLD from commonTLDs.
+// WithRandomTLD returns a random email with a random TLD from commonTLDs.
 //
 // Returns:
 //   - string: A random email address with a random TLD.
 //   - error: An error if generation fails.
-func EmailWithRandomTLD() (string, error) {
-	return Email(EmailOptions{TLD: "random"})
+func WithRandomTLD() (string, error) {
+	return Email(Options{TLD: "random"})
 }
 
-// MustEmailWithRandomTLD returns a random email with a random TLD from commonTLDs.
+// MustWithRandomTLD returns a random email with a random TLD from commonTLDs.
 // It panics if an error occurs.
 //
 // Returns:
 //   - string: A random email address with a random TLD.
-func MustEmailWithRandomTLD() string {
-	result, err := EmailWithRandomTLD()
+func MustWithRandomTLD() string {
+	result, err := WithRandomTLD()
 	if err != nil {
 		panic(err)
 	}
 	return result
 }
 
-// EmailWithoutTLD returns a random email without a TLD.
+// WithoutTLD returns a random email without a TLD.
 //
 // Returns:
 //   - string: A random email address without a TLD.
 //   - error: An error if generation fails.
-func EmailWithoutTLD() (string, error) {
-	return Email(EmailOptions{TLD: "none"})
+func WithoutTLD() (string, error) {
+	return Email(Options{TLD: "none"})
 }
 
-// MustEmailWithoutTLD returns a random email without a TLD.
+// MustWithoutTLD returns a random email without a TLD.
 // It panics if an error occurs.
 //
 // Returns:
 //   - string: A random email address without a TLD.
-func MustEmailWithoutTLD() string {
-	result, err := EmailWithoutTLD()
+func MustWithoutTLD() string {
+	result, err := WithoutTLD()
 	if err != nil {
 		panic(err)
 	}

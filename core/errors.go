@@ -4,18 +4,22 @@ import "errors"
 
 // Package-level errors. Returned when arguments are invalid.
 var (
-	ErrInvalidN        = errors.New("randutil: n must be > 0")
-	ErrInvalidRange    = errors.New("randutil: range must be > 0")
-	ErrSampleTooLarge  = errors.New("randutil: sample k exceeds size")
-	ErrInvalidWeights  = errors.New("randutil: invalid weights")
-	ErrWeightsMismatch = errors.New("randutil: items/weights mismatch")
-	ErrEmptySlice      = errors.New("randutil: cannot pick from empty slice")
-	ErrEmptyItems      = errors.New("randutil: empty items")
-	ErrEmptyCharset    = errors.New("randutil: charset must be non-empty")
-	ErrOddHexLength    = errors.New("randutil: hex length must be even")
+	ErrNegativeLength     = errors.New("randutil: length must be >= 0")
+	ErrNonPositiveBound   = errors.New("randutil: bound must be > 0")
+	ErrInvalidProbability = errors.New("randutil: probability must be in [0,1]")
+	ErrNonPositiveRate    = errors.New("randutil: rate must be > 0")
+	ErrNegativeStdDev     = errors.New("randutil: stddev must be >= 0")
+	ErrEmptyCharset       = errors.New("randutil: charset must be non-empty")
+	ErrInvalidCharset     = errors.New("randutil: charset must be ASCII")
+	ErrOddHexLength       = errors.New("randutil: hex length must be even")
 
-	// Range and generation errors
-	ErrMinGreaterThanMax       = errors.New("randutil: min > max")
-	ErrInvalidRangeNonPositive = errors.New("randutil: non-positive range")
+	ErrSampleTooLarge  = errors.New("randutil: sample size exceeds available items")
+	ErrInvalidWeights  = errors.New("randutil: weights must be non-negative with at least one > 0")
+	ErrWeightsMismatch = errors.New("randutil: items/weights length mismatch")
+	ErrEmptySlice      = errors.New("randutil: empty slice")
+	ErrEmptyItems      = errors.New("randutil: empty items")
+
+	ErrMinGreaterThanMax       = errors.New("randutil: min greater than max")
+	ErrInvalidRangeNonPositive = errors.New("randutil: range must be positive")
 	ErrResultOutOfRange        = errors.New("randutil: result out of range")
 )

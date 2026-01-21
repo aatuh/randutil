@@ -20,7 +20,7 @@ const (
 //   - int: A random int in [minInclusive, maxInclusive].
 //   - error: An error if crypto/rand fails.
 func IntRange(minInclusive int, maxInclusive int) (int, error) {
-	return def.IntRange(minInclusive, maxInclusive)
+	return Default().IntRange(minInclusive, maxInclusive)
 }
 
 // MustIntRange returns a secure random int in [minInclusive, maxInclusive].
@@ -68,7 +68,7 @@ func MustAnyInt() int {
 //   - int32: A random int32 in [minInclusive, maxInclusive].
 //   - error: An error if crypto/rand fails.
 func Int32Range(minInclusive int32, maxInclusive int32) (int32, error) {
-	return def.Int32Range(minInclusive, maxInclusive)
+	return Default().Int32Range(minInclusive, maxInclusive)
 }
 
 // MustInt32Range returns a secure random int32 in [minInclusive, maxInclusive].
@@ -152,7 +152,7 @@ func MustNegativeInt32() int32 {
 //   - int64: A random int64 in [minInclusive, maxInclusive].
 //   - error: An error if crypto/rand fails.
 func Int64Range(minInclusive int64, maxInclusive int64) (int64, error) {
-	return def.Int64Range(minInclusive, maxInclusive)
+	return Default().Int64Range(minInclusive, maxInclusive)
 }
 
 // MustInt64Range returns a secure random int64 in [minInclusive, maxInclusive].

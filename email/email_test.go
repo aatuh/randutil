@@ -4,12 +4,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aatuh/randutil/v2/core"
 	"github.com/aatuh/randutil/v2/internal/testutil"
 )
 
 func TestEmailIgnoresTotalLengthWhenOptionsProvided(t *testing.T) {
 	// TLD override present -> ignore TotalLength.
-	e, err := Email(EmailOptions{TLD: "org", TotalLength: 9})
+	e, err := Email(Options{TLD: "org", TotalLength: 9})
 	if err != nil {
 		t.Fatalf("Email error: %v", err)
 	}
@@ -21,7 +22,7 @@ func TestEmailIgnoresTotalLengthWhenOptionsProvided(t *testing.T) {
 	}
 
 	// LocalPart override present -> ignore TotalLength.
-	e, err = Email(EmailOptions{LocalPart: "aaa", TotalLength: 50})
+	e, err = Email(Options{LocalPart: "aaa", TotalLength: 50})
 	if err != nil {
 		t.Fatalf("Email error: %v", err)
 	}
@@ -33,7 +34,7 @@ func TestEmailIgnoresTotalLengthWhenOptionsProvided(t *testing.T) {
 	}
 
 	// DomainPart override present -> ignore TotalLength.
-	e, err = Email(EmailOptions{DomainPart: "example", TotalLength: 8})
+	e, err = Email(Options{DomainPart: "example", TotalLength: 8})
 	if err != nil {
 		t.Fatalf("Email error: %v", err)
 	}
@@ -45,11 +46,11 @@ func TestEmailIgnoresTotalLengthWhenOptionsProvided(t *testing.T) {
 	}
 }
 
-func TestEmailSimple(t *testing.T) {
+func TestSimple(t *testing.T) {
 	// Test with valid length
-	email, err := EmailSimple(10)
+	email, err := Simple(10)
 	if err != nil {
-		t.Fatalf("EmailSimple error: %v", err)
+		t.Fatalf("Simple error: %v", err)
 	}
 	if len(email) != 10 {
 		t.Fatalf("Expected length 10, got %d", len(email))
@@ -62,46 +63,46 @@ func TestEmailSimple(t *testing.T) {
 	}
 
 	// Test with too small length
-	_, err = EmailSimple(5)
+	_, err = Simple(5)
 	if err == nil {
 		t.Fatal("Expected error for too small length")
 	}
 }
 
-func TestEmailWithCustomLocal(t *testing.T) {
-	email, err := EmailWithCustomLocal("testuser")
+func TestWithCustomLocal(t *testing.T) {
+	email, err := WithCustomLocal("testuser")
 	if err != nil {
-		t.Fatalf("EmailWithCustomLocal error: %v", err)
+		t.Fatalf("WithCustomLocal error: %v", err)
 	}
 	if !strings.HasPrefix(email, "testuser@") {
 		t.Fatalf("Expected email to start with testuser@: %s", email)
 	}
 }
 
-func TestEmailWithCustomDomain(t *testing.T) {
-	email, err := EmailWithCustomDomain("example")
+func TestWithCustomDomain(t *testing.T) {
+	email, err := WithCustomDomain("example")
 	if err != nil {
-		t.Fatalf("EmailWithCustomDomain error: %v", err)
+		t.Fatalf("WithCustomDomain error: %v", err)
 	}
 	if !strings.Contains(email, "@example.") {
 		t.Fatalf("Expected email to contain @example.: %s", email)
 	}
 }
 
-func TestEmailWithCustomTLD(t *testing.T) {
-	email, err := EmailWithCustomTLD("org")
+func TestWithCustomTLD(t *testing.T) {
+	email, err := WithCustomTLD("org")
 	if err != nil {
-		t.Fatalf("EmailWithCustomTLD error: %v", err)
+		t.Fatalf("WithCustomTLD error: %v", err)
 	}
 	if !strings.HasSuffix(email, ".org") {
 		t.Fatalf("Expected email to end with .org: %s", email)
 	}
 }
 
-func TestEmailWithRandomTLD(t *testing.T) {
-	email, err := EmailWithRandomTLD()
+func TestWithRandomTLD(t *testing.T) {
+	email, err := WithRandomTLD()
 	if err != nil {
-		t.Fatalf("EmailWithRandomTLD error: %v", err)
+		t.Fatalf("WithRandomTLD error: %v", err)
 	}
 	// Should contain @ and have a TLD
 	if !strings.Contains(email, "@") {
@@ -117,10 +118,10 @@ func TestEmailWithRandomTLD(t *testing.T) {
 	}
 }
 
-func TestEmailWithoutTLD(t *testing.T) {
-	email, err := EmailWithoutTLD()
+func TestWithoutTLD(t *testing.T) {
+	email, err := WithoutTLD()
 	if err != nil {
-		t.Fatalf("EmailWithoutTLD error: %v", err)
+		t.Fatalf("WithoutTLD error: %v", err)
 	}
 	if !strings.Contains(email, "@") {
 		t.Fatalf("Email should contain @: %s", email)
@@ -133,13 +134,13 @@ func TestEmailWithoutTLD(t *testing.T) {
 func TestEmailGeneratorUsesOwnSource(t *testing.T) {
 	// Fixed stream will produce deterministic output.
 	src := testutil.NewSeqReader([]byte("abcdef"))
-	g := New(src)
+	g := New(core.New(src))
 
-	e1, err := g.Email(EmailOptions{})
+	e1, err := g.Email(Options{})
 	if err != nil {
 		t.Fatalf("Email error: %v", err)
 	}
-	e2, err := g.Email(EmailOptions{})
+	e2, err := g.Email(Options{})
 	if err != nil {
 		t.Fatalf("Email error: %v", err)
 	}

@@ -3,8 +3,11 @@ package randstring
 import (
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/aatuh/randutil/v2/core"
 )
 
 func TestStringWithCharsetErrors(t *testing.T) {
@@ -13,6 +16,9 @@ func TestStringWithCharsetErrors(t *testing.T) {
 	}
 	if _, err := StringWithCharset(1, ""); err == nil {
 		t.Fatalf("expected error for empty charset")
+	}
+	if _, err := StringWithCharset(1, "å"); !errors.Is(err, core.ErrInvalidCharset) {
+		t.Fatalf("expected invalid charset error, got %v", err)
 	}
 }
 

@@ -12,7 +12,7 @@ package randstring
 //     charset.
 //   - error: An error if crypto/rand fails.
 func StringWithCharset(length int, charset string) (string, error) {
-	return Default.StringWithCharset(length, charset)
+	return Default().StringWithCharset(length, charset)
 }
 
 // String returns a random string of length characters drawn from the
@@ -26,7 +26,7 @@ func StringWithCharset(length int, charset string) (string, error) {
 //     charset.
 //   - error: An error if crypto/rand fails.
 func String(length int) (string, error) {
-	return Default.String(length)
+	return Default().String(length)
 }
 
 // MustString returns a random string of length characters drawn from the
@@ -52,22 +52,22 @@ func MustString(length int) string {
 // the active entropy source.
 //
 // Parameters:
-//   - byteLen: The length of the base64 string to generate.
+//   - byteLen: The number of random bytes to generate.
 //
 // Returns:
-//   - string: A base64 string of length byteLen.
+//   - string: A base64 string of length approximately 4*ceil(byteLen/3).
 //   - error: An error if crypto/rand fails.
 func Base64(byteLen int) (string, error) {
-	return Default.Base64(byteLen)
+	return Default().Base64(byteLen)
 }
 
-// MustBase64 returns a base64 string of length byteLen. It panics on error.
+// MustBase64 returns a base64 string built from byteLen random bytes. It panics on error.
 //
 // Parameters:
-//   - byteLen: The length of the base64 string to generate.
+//   - byteLen: The number of random bytes to generate.
 //
 // Returns:
-//   - string: A base64 string of length byteLen.
+//   - string: A base64 string of length approximately 4*ceil(byteLen/3).
 func MustBase64(byteLen int) string {
 	s, err := Base64(byteLen)
 	if err != nil {
@@ -86,7 +86,7 @@ func MustBase64(byteLen int) string {
 //   - string: A lower-case hex string of length strLen.
 //   - error: An error if crypto/rand fails.
 func Hex(strLen int) (string, error) {
-	return Default.Hex(strLen)
+	return Default().Hex(strLen)
 }
 
 // MustHex returns a lower-case hex string of length strLen. It panics on error.
@@ -117,7 +117,7 @@ func MustHex(strLen int) string {
 //     [minStrLen, maxStrLen].
 //   - error: An error if crypto/rand fails.
 func StringSlice(sliceLength, minStrLen, maxStrLen int) ([]string, error) {
-	return Default.StringSlice(sliceLength, minStrLen, maxStrLen)
+	return Default().StringSlice(sliceLength, minStrLen, maxStrLen)
 }
 
 // MustStringSlice returns a slice of random strings with per-item length in

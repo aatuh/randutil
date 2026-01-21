@@ -1,3 +1,3 @@
 // Package core provides basic random number generation primitives and
-// entropy source management for the randutil package.
+// the Source/RNG ports used across randutil.
 package core

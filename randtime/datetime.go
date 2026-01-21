@@ -10,7 +10,7 @@ import (
 //   - time.Time: A random time between year 1 and 9999.
 //   - error: An error if crypto/rand fails.
 func Datetime() (time.Time, error) {
-	return Default.Datetime()
+	return Default().Datetime()
 }
 
 // MustDatetime returns a secure random time between year 1 and 9999. It panics
@@ -32,7 +32,7 @@ func MustDatetime() time.Time {
 //   - time.Time: A time a few minutes in the past.
 //   - error: An error if crypto/rand fails.
 func TimeInNearPast() (time.Time, error) {
-	return Default.TimeInNearPast()
+	return Default().TimeInNearPast()
 }
 
 // MustTimeInNearPast returns a time a few minutes in the past. It panics if an
@@ -54,7 +54,7 @@ func MustTimeInNearPast() time.Time {
 //   - time.Time: A time a few minutes in the future.
 //   - error: An error if crypto/rand fails.
 func TimeInNearFuture() (time.Time, error) {
-	return Default.TimeInNearFuture()
+	return Default().TimeInNearFuture()
 }
 
 // MustTimeInNearFuture returns a time a few minutes in the future. It panics if

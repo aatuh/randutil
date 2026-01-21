@@ -1,6 +1,7 @@
 package numeric
 
 import (
+	"errors"
 	"io"
 	"math"
 	"testing"
@@ -49,8 +50,8 @@ func TestFloat64Range(t *testing.T) {
 
 func TestUint64Deterministic(t *testing.T) {
 	src := testutil.NewSeqReader(testutil.Uint64Bytes(0x0706050403020100))
-	testutil.WithSource(t, src)
-	v, err := Uint64()
+	gen := New(core.New(src))
+	v, err := gen.Uint64()
 	if err != nil {
 		t.Fatalf("Uint64 returned error: %v", err)
 	}
@@ -64,8 +65,8 @@ func TestUint64nRejectsHighValues(t *testing.T) {
 	high := testutil.Uint64Bytes(^uint64(0))
 	zero := testutil.Uint64Bytes(0)
 	src := testutil.NewSeqReader(high, zero)
-	testutil.WithSource(t, src)
-	v, err := Uint64n(3)
+	gen := New(core.New(src))
+	v, err := gen.Uint64n(3)
 	if err != nil {
 		t.Fatalf("Uint64n returned error: %v", err)
 	}
@@ -75,22 +76,23 @@ func TestUint64nRejectsHighValues(t *testing.T) {
 }
 
 func TestUint64nZeroError(t *testing.T) {
-	testutil.WithSource(t, testutil.NewSeqReader())
-	if _, err := Uint64n(0); err != core.ErrInvalidRange {
-		t.Fatalf("Uint64n error = %v want %v", err, core.ErrInvalidRange)
+	gen := New(core.New(testutil.NewSeqReader()))
+	if _, err := gen.Uint64n(0); !errors.Is(err, core.ErrNonPositiveBound) {
+		t.Fatalf("Uint64n error = %v want %v", err, core.ErrNonPositiveBound)
 	}
 }
 
 func TestIntnInvalidParam(t *testing.T) {
-	if _, err := Intn(0); err != core.ErrInvalidN {
-		t.Fatalf("Intn error = %v want %v", err, core.ErrInvalidN)
+	gen := New(core.New(testutil.NewSeqReader()))
+	if _, err := gen.Intn(0); !errors.Is(err, core.ErrNonPositiveBound) {
+		t.Fatalf("Intn error = %v want %v", err, core.ErrNonPositiveBound)
 	}
 }
 
 func TestFloat64Deterministic(t *testing.T) {
 	src := testutil.NewSeqReader(testutil.Float64Bytes(0.25))
-	testutil.WithSource(t, src)
-	v, err := Float64()
+	gen := New(core.New(src))
+	v, err := gen.Float64()
 	if err != nil {
 		t.Fatalf("Float64 error: %v", err)
 	}
@@ -101,16 +103,16 @@ func TestFloat64Deterministic(t *testing.T) {
 
 func TestMustWrappersPanicOnError(t *testing.T) {
 	errSrc := testutil.ErrReader{Err: io.ErrUnexpectedEOF}
-	testutil.WithSource(t, errSrc)
+	gen := New(core.New(errSrc))
 	expectsPanic := []struct {
 		name string
 		fn   func()
 	}{
-		{"MustUint64", func() { MustUint64() }},
-		{"MustUint64n", func() { MustUint64n(10) }},
-		{"MustIntn", func() { MustIntn(10) }},
-		{"MustInt64n", func() { MustInt64n(10) }},
-		{"MustFloat64", func() { MustFloat64() }},
+		{"MustUint64", func() { gen.MustUint64() }},
+		{"MustUint64n", func() { gen.MustUint64n(10) }},
+		{"MustIntn", func() { gen.MustIntn(10) }},
+		{"MustInt64n", func() { gen.MustInt64n(10) }},
+		{"MustFloat64", func() { gen.MustFloat64() }},
 	}
 	for _, tc := range expectsPanic {
 		t.Run(tc.name, func(t *testing.T) {

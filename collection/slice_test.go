@@ -1,6 +1,7 @@
 package collection
 
 import (
+	"errors"
 	"sort"
 	"testing"
 
@@ -66,23 +67,29 @@ func TestSampleBasics(t *testing.T) {
 }
 
 func TestPerm(t *testing.T) {
-	const n = 50
-	p, err := Perm(n)
+	src := make([]int, 50)
+	for i := range src {
+		src[i] = i
+	}
+	original := append([]int(nil), src...)
+	p, err := Perm(src)
 	if err != nil {
 		t.Fatalf("Perm error: %v", err)
 	}
-	if len(p) != n {
-		t.Fatalf("perm length = %d want %d", len(p), n)
+	if len(p) != len(src) {
+		t.Fatalf("perm length = %d want %d", len(p), len(src))
 	}
 	seen := map[int]bool{}
 	for _, v := range p {
-		if v < 0 || v >= n {
-			t.Fatalf("perm value out of range: %d", v)
-		}
 		if seen[v] {
 			t.Fatalf("duplicate value in perm: %d", v)
 		}
 		seen[v] = true
+	}
+	for i, v := range src {
+		if v != original[i] {
+			t.Fatalf("Perm modified input slice at %d", i)
+		}
 	}
 }
 
@@ -92,40 +99,34 @@ func TestUint64nInvalid(t *testing.T) {
 	}
 }
 
-func TestSlicePickOne(t *testing.T) {
+func TestPickOne(t *testing.T) {
 	s := []int{1, 2, 3}
 	seen := make(map[int]bool)
 	for i := 0; i < 25; i++ {
-		v, err := SlicePickOne(s)
+		v, err := PickOne(s)
 		if err != nil {
-			t.Fatalf("SlicePickOne error: %v", err)
+			t.Fatalf("PickOne error: %v", err)
 		}
 		seen[v] = true
 	}
 	if len(seen) == 0 {
-		t.Fatalf("SlicePickOne never returned any value")
+		t.Fatalf("PickOne never returned any value")
 	}
 }
 
-func TestSlicePickOneEmpty(t *testing.T) {
-	if _, err := SlicePickOne([]int{}); err == nil {
+func TestPickOneEmpty(t *testing.T) {
+	if _, err := PickOne([]int{}); err == nil {
 		t.Fatal("expected error for empty slice")
 	}
 }
 
 func TestSampleErrors(t *testing.T) {
 	s := []int{1, 2, 3}
-	if _, err := Sample(s, -1); err != core.ErrInvalidN {
+	if _, err := Sample(s, -1); !errors.Is(err, core.ErrNegativeLength) {
 		t.Fatalf("Sample negative error = %v", err)
 	}
-	if _, err := Sample(s, 4); err != core.ErrSampleTooLarge {
+	if _, err := Sample(s, 4); !errors.Is(err, core.ErrSampleTooLarge) {
 		t.Fatalf("Sample oversize error = %v", err)
-	}
-}
-
-func TestPermInvalidInput(t *testing.T) {
-	if _, err := Perm(-1); err == nil {
-		t.Fatal("expected error for negative n")
 	}
 }
 
@@ -142,13 +143,13 @@ func TestChoiceAndMust(t *testing.T) {
 	}
 }
 
-func TestMustSlicePickPanics(t *testing.T) {
+func TestMustPickPanics(t *testing.T) {
 	defer func() {
 		if recover() == nil {
-			t.Fatal("MustSlicePickOne did not panic for empty slice")
+			t.Fatal("MustPickOne did not panic for empty slice")
 		}
 	}()
-	MustSlicePickOne([]int{})
+	MustPickOne([]int{})
 }
 
 func contains[T comparable](s []T, v T) bool {
