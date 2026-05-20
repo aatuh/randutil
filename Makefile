@@ -15,7 +15,7 @@ GOSEC_BIN := $(TOOLS_BIN)/gosec
 GOVULNCHECK_BIN := $(TOOLS_BIN)/govulncheck
 FUZZTIME ?= 10s
 
-.PHONY: help test test-ci test-must test-race vet lint gosec vuln tidy fmt tools fuzz-smoke clean finalize
+.PHONY: help test test-ci test-must test-race bench vet lint gosec vuln tidy fmt tools fuzz-smoke clean finalize
 
 help: ## Show help
 	@awk 'BEGIN {FS=":.*## "}; \
@@ -62,6 +62,9 @@ test-must: ## Run unit tests with randutil_must build tag
 
 test-race: ## Run unit tests with race detector
 	$(GO) test ./... -race -count=1
+
+bench: ## Run benchmarks
+	$(GO) test -run=^$$ -bench=. -benchmem ./...
 
 vet: ## Run go vet
 	$(GO) vet ./...

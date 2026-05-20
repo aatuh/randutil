@@ -12,6 +12,12 @@ go get github.com/aatuh/randutil/v2
 
 Requires Go 1.24.0+.
 
+Production-readiness notes:
+
+- [Changelog](CHANGELOG.md)
+- [Release process](docs/release.md)
+- [Benchmark process](docs/benchmarks.md)
+
 ## Quick start
 
 ```go
