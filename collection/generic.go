@@ -172,7 +172,7 @@ func weightedSampleWithRNG[T any](
 }
 
 func pickByProbabilityWithRNG[T any](rng rng, xs []T, p float64) ([]T, error) {
-	if p < 0 || p > 1 {
+	if math.IsNaN(p) || math.IsInf(p, 0) || p < 0 || p > 1 {
 		return nil, core.ErrInvalidProbability
 	}
 	if len(xs) == 0 {

@@ -1,7 +1,11 @@
 package collection
 
 import (
+	"errors"
+	"math"
 	"testing"
+
+	"github.com/aatuh/randutil/v2/core"
 )
 
 func TestPickByProbability(t *testing.T) {
@@ -56,6 +60,12 @@ func TestPickByProbabilityEdgeCases(t *testing.T) {
 	_, err = PickByProbability([]string{"a"}, 1.1)
 	if err == nil {
 		t.Error("Expected error for probability > 1")
+	}
+
+	for _, p := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+		if _, err := PickByProbability([]string{"a"}, p); !errors.Is(err, core.ErrInvalidProbability) {
+			t.Fatalf("PickByProbability(%v) error = %v want %v", p, err, core.ErrInvalidProbability)
+		}
 	}
 }
 

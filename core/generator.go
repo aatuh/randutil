@@ -11,6 +11,7 @@ const (
 	maxInt   = int(^uint(0) >> 1)
 	minInt   = -maxInt - 1
 	maxInt64 = int64(^uint64(0) >> 1)
+	minInt64 = -maxInt64 - 1
 	maxInt32 = int64(^uint32(0) >> 1)
 	minInt32 = -maxInt32 - 1
 )
@@ -272,10 +273,11 @@ func (g *Generator) IntRange(minInclusive int, maxInclusive int) (int, error) {
 		return 0, err
 	}
 	res := new(big.Int).Add(n, bigMin)
-	if res.BitLen() > 63 {
-		return 0, ErrResultOutOfRange
+	i64, err := bigIntToInt64(res)
+	if err != nil {
+		return 0, err
 	}
-	return int64ToInt(res.Int64())
+	return int64ToInt(i64)
 }
 
 // Int32Range returns a secure random int32 in [minInclusive, maxInclusive].
@@ -348,10 +350,7 @@ func (g *Generator) Int64Range(minInclusive int64, maxInclusive int64) (int64, e
 		return 0, err
 	}
 	bigResult := new(big.Int).Add(n, bigMin)
-	if bigResult.BitLen() > 63 {
-		return 0, ErrResultOutOfRange
-	}
-	return bigResult.Int64(), nil
+	return bigIntToInt64(bigResult)
 }
 
 // bigInt returns a random big.Int in [0, max) using the generator's source.
@@ -403,6 +402,13 @@ func absInt64ToUint64(v int64) uint64 {
 	}
 	// #nosec G115 -- two's complement absolute value for negative int64.
 	return uint64(^v) + 1
+}
+
+func bigIntToInt64(n *big.Int) (int64, error) {
+	if n.Cmp(big.NewInt(minInt64)) < 0 || n.Cmp(big.NewInt(maxInt64)) > 0 {
+		return 0, ErrResultOutOfRange
+	}
+	return n.Int64(), nil
 }
 
 func uint64ToInt64(n uint64) (int64, error) {

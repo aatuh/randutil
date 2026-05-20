@@ -22,6 +22,11 @@ func TestBernoulli(t *testing.T) {
 	if _, err := gen.Bernoulli(1.1); err == nil {
 		t.Fatalf("expected error for p > 1")
 	}
+	for _, p := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
+		if _, err := gen.Bernoulli(p); !errors.Is(err, core.ErrInvalidProbability) {
+			t.Fatalf("Bernoulli(%v) error = %v want %v", p, err, core.ErrInvalidProbability)
+		}
+	}
 	gen = newGen(testutil.Float64Bytes(0.2))
 	v, err := gen.Bernoulli(0.5)
 	if err != nil {

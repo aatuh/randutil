@@ -4,6 +4,9 @@ import (
 	"math"
 	"strconv"
 	"testing"
+
+	"github.com/aatuh/randutil/v2/core"
+	"github.com/aatuh/randutil/v2/internal/testutil"
 )
 
 func TestIntRangeBounds(t *testing.T) {
@@ -58,5 +61,30 @@ func TestInt64RangeAndVariants(t *testing.T) {
 	}
 	if v, err := NegativeInt64(); err != nil || v > -1 {
 		t.Fatalf("NegativeInt64 value: %d err: %v", v, err)
+	}
+}
+
+func TestGeneratorAnyInt64CanReturnMinInt64(t *testing.T) {
+	gen := New(core.New(testutil.NewSeqReader(testutil.Uint64Bytes(0))))
+	got, err := gen.AnyInt64()
+	if err != nil {
+		t.Fatalf("AnyInt64 returned error: %v", err)
+	}
+	if got != minInt64 {
+		t.Fatalf("AnyInt64 = %d want %d", got, minInt64)
+	}
+}
+
+func TestGeneratorAnyIntCanReturnMinIntOn64Bit(t *testing.T) {
+	if strconv.IntSize != 64 {
+		t.Skip("64-bit AnyInt regression")
+	}
+	gen := New(core.New(testutil.NewSeqReader(testutil.Uint64Bytes(0))))
+	got, err := gen.AnyInt()
+	if err != nil {
+		t.Fatalf("AnyInt returned error: %v", err)
+	}
+	if got != minInt {
+		t.Fatalf("AnyInt = %d want %d", got, minInt)
 	}
 }
