@@ -1,10 +1,13 @@
 package uuid
 
 import (
+	"encoding/binary"
 	"time"
 
 	"github.com/aatuh/randutil/v2/core"
 )
+
+const maxV7Time = int64(1<<48 - 1)
 
 // Generator builds UUID-related random operations using a core RNG.
 //
@@ -73,16 +76,13 @@ func (g *Generator) V7() (UUID, error) {
 		return "", err
 	}
 	ms := g.nowUTC().UnixMilli()
-	if ms < 0 {
+	if ms < 0 || ms > maxV7Time {
 		return "", core.ErrResultOutOfRange
 	}
 	msu := uint64(ms)
-	b[0] = byte(msu >> 40)
-	b[1] = byte(msu >> 32)
-	b[2] = byte(msu >> 24)
-	b[3] = byte(msu >> 16)
-	b[4] = byte(msu >> 8)
-	b[5] = byte(msu)
+	var ts [8]byte
+	binary.BigEndian.PutUint64(ts[:], msu)
+	copy(b[:6], ts[2:])
 	b[6] = (b[6] & 0x0f) | 0x70 // version 7
 	b[8] = (b[8] & 0x3f) | 0x80 // variant 10xx
 	var uuidBytes [16]byte

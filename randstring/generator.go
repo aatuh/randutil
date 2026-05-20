@@ -102,14 +102,14 @@ func (g *Generator) StringWithCharset(length int, charset string) (string, error
 		return string(out), nil
 	}
 
-	acceptLimit := byte(256 - (256 % n))
+	acceptLimit := 256 - (256 % n)
 	pos := 0
 	for pos < length {
 		if err := g.rng.Fill(buf); err != nil {
 			return "", err
 		}
 		for _, b := range buf {
-			if b >= acceptLimit {
+			if int(b) >= acceptLimit {
 				continue
 			}
 			out[pos] = charsetBytes[int(b)%n]

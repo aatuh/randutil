@@ -86,6 +86,14 @@ func TestV7WithClock(t *testing.T) {
 	}
 }
 
+func TestV7RejectsTimestampOverflow(t *testing.T) {
+	gen := NewWithClock(core.New(testutil.NewSeqReader(make([]byte, 16))),
+		func() stdtime.Time { return stdtime.UnixMilli(maxV7Time + 1) })
+	if _, err := gen.V7(); !errors.Is(err, core.ErrResultOutOfRange) {
+		t.Fatalf("V7 overflow error = %v want %v", err, core.ErrResultOutOfRange)
+	}
+}
+
 func TestParse(t *testing.T) {
 	u, err := Parse("A8098C1A-F86E-11DA-BDBF-10B96E4EF00D")
 	if err != nil {

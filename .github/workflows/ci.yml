@@ -17,13 +17,13 @@ jobs:
       pull-requests: read
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@v2.14.0
+        uses: step-security/harden-runner@v2.19.3
         with:
           egress-policy: audit
       - name: Checkout
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v6.0.2
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4.8.2
+        uses: actions/dependency-review-action@v5.0.0
 
   test:
     runs-on: ubuntu-24.04
@@ -32,13 +32,13 @@ jobs:
       security-events: write
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@v2.14.0
+        uses: step-security/harden-runner@v2.19.3
         with:
           egress-policy: audit
       - name: Checkout
-        uses: actions/checkout@v5.0.0
+        uses: actions/checkout@v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@v6.2.0
+        uses: actions/setup-go@v6.4.0
         with:
           go-version-file: go.mod
           cache: true
@@ -56,9 +56,28 @@ jobs:
         id: govulncheck
         run: ./.tools/bin/govulncheck -format sarif ./... > govulncheck.sarif
         continue-on-error: true
+      - name: Normalize govulncheck SARIF
+        if: always() && hashFiles('govulncheck.sarif') != ''
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("govulncheck.sarif")
+          data = json.loads(path.read_text())
+          for run in data.get("runs", []):
+              for rule in run.get("tool", {}).get("driver", {}).get("rules", []):
+                  props = rule.get("properties")
+                  if not isinstance(props, dict):
+                      continue
+                  tags = props.get("tags")
+                  if isinstance(tags, list):
+                      props["tags"] = list(dict.fromkeys(tags))
+          path.write_text(json.dumps(data, separators=(",", ":")))
+          PY
       - name: Upload govulncheck SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4.31.10
+        if: always() && hashFiles('govulncheck.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4.35.5
         with:
           sarif_file: govulncheck.sarif
           category: govulncheck
@@ -69,9 +88,28 @@ jobs:
         id: gosec
         run: ./.tools/bin/gosec -fmt=sarif -out=gosec.sarif ./...
         continue-on-error: true
+      - name: Normalize gosec SARIF
+        if: always() && hashFiles('gosec.sarif') != ''
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("gosec.sarif")
+          data = json.loads(path.read_text())
+          for run in data.get("runs", []):
+              for rule in run.get("tool", {}).get("driver", {}).get("rules", []):
+                  props = rule.get("properties")
+                  if not isinstance(props, dict):
+                      continue
+                  tags = props.get("tags")
+                  if isinstance(tags, list):
+                      props["tags"] = list(dict.fromkeys(tags))
+          path.write_text(json.dumps(data, separators=(",", ":")))
+          PY
       - name: Upload gosec SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4.31.10
+        if: always() && hashFiles('gosec.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4.35.5
         with:
           sarif_file: gosec.sarif
           category: gosec
