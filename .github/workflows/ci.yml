@@ -38,7 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5.0.0
       - name: Setup Go
-        uses: actions/setup-go@v6.2.0
+        uses: actions/setup-go@v6.4.0
         with:
           go-version-file: go.mod
           cache: true
