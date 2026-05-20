@@ -42,8 +42,14 @@ func (b *bufferedSource) Read(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
+	if b == nil {
+		return 0, core.ErrSourceClosed
+	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if b.src == nil {
+		return 0, core.ErrSourceClosed
+	}
 
 	total := 0
 	for total < len(p) {

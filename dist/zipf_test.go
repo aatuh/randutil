@@ -2,6 +2,7 @@ package dist
 
 import (
 	"errors"
+	"math"
 	"testing"
 
 	"github.com/aatuh/randutil/v2/adapters"
@@ -46,5 +47,12 @@ func TestZipfDeterministic(t *testing.T) {
 		if v1 != v2 {
 			t.Fatalf("Zipf mismatch at %d: %d vs %d", i, v1, v2)
 		}
+	}
+}
+
+func TestZipfRejectsNonFiniteCDF(t *testing.T) {
+	gen := New(nil)
+	if _, err := gen.Zipf(math.MaxFloat64, math.MaxFloat64, 1); err == nil {
+		t.Fatalf("expected error for non-finite Zipf CDF")
 	}
 }

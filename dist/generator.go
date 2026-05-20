@@ -71,6 +71,9 @@ func (g *Generator) Categorical(weights []float64) (int, error) {
 			return 0, core.ErrInvalidWeights
 		}
 		sum += w
+		if !isFinite(sum) {
+			return 0, core.ErrInvalidWeights
+		}
 	}
 	if sum <= 0 {
 		return 0, core.ErrInvalidWeights

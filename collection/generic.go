@@ -178,13 +178,21 @@ func pickByProbabilityWithRNG[T any](rng rng, xs []T, p float64) ([]T, error) {
 	if len(xs) == 0 {
 		return []T{}, nil
 	}
+	if p == 0 {
+		return []T{}, nil
+	}
+	if p == 1 {
+		out := make([]T, len(xs))
+		copy(out, xs)
+		return out, nil
+	}
 	out := make([]T, 0, len(xs))
 	for _, it := range xs {
 		u, err := rng.Float64()
 		if err != nil {
 			return nil, err
 		}
-		if u <= p {
+		if u < p {
 			out = append(out, it)
 		}
 	}

@@ -1,6 +1,7 @@
 package dist
 
 import (
+	"errors"
 	"io"
 	"math"
 	"testing"
@@ -72,6 +73,9 @@ func TestCategorical(t *testing.T) {
 	}
 	if _, err := gen.Categorical([]float64{-1}); err == nil {
 		t.Fatalf("expected error for negative weight")
+	}
+	if _, err := gen.Categorical([]float64{math.MaxFloat64, math.MaxFloat64}); !errors.Is(err, core.ErrInvalidWeights) {
+		t.Fatalf("expected invalid weights for overflowing sum, got %v", err)
 	}
 }
 

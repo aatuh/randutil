@@ -34,12 +34,25 @@ func (g *Generator) Zipf(s, v float64, imax int) (*Zipf, error) {
 	z.cdf = make([]float64, imax)
 	var acc float64
 	for k := 1; k <= imax; k++ {
-		acc += math.Pow(z.v+float64(k), -z.s)
+		term := math.Pow(z.v+float64(k), -z.s)
+		if !isFinite(term) {
+			return nil, errors.New("randutil: invalid s, v, or imax")
+		}
+		acc += term
+		if !isFinite(acc) {
+			return nil, errors.New("randutil: invalid s, v, or imax")
+		}
 		z.cdf[k-1] = acc
 	}
 	z.total = acc
+	if z.total <= 0 {
+		return nil, errors.New("randutil: invalid s, v, or imax")
+	}
 	for i := range z.cdf {
 		z.cdf[i] /= z.total
+		if !isFinite(z.cdf[i]) {
+			return nil, errors.New("randutil: invalid s, v, or imax")
+		}
 	}
 	return z, nil
 }

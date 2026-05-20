@@ -176,6 +176,26 @@ func TestBufferedSourceMatchesUnderlying(t *testing.T) {
 	}
 }
 
+func TestBufferedSourceReadAfterClose(t *testing.T) {
+	src := BufferedSourceWithSize(testutil.NewSeqReader([]byte{1, 2, 3}), 2)
+	closer, ok := src.(io.Closer)
+	if !ok {
+		t.Fatalf("BufferedSourceWithSize did not return an io.Closer")
+	}
+	if err := closer.Close(); err != nil {
+		t.Fatalf("Close error: %v", err)
+	}
+
+	buf := []byte{9, 9}
+	n, err := src.Read(buf)
+	if n != 0 || !errors.Is(err, core.ErrSourceClosed) {
+		t.Fatalf("Read after Close = (%d, %v), want (0, ErrSourceClosed)", n, err)
+	}
+	if !bytes.Equal(buf, []byte{9, 9}) {
+		t.Fatalf("Read after Close changed buffer: %v", buf)
+	}
+}
+
 func mustDeterministicSource(t testing.TB, seed []byte) core.Source {
 	t.Helper()
 	src, err := DeterministicSource(seed)

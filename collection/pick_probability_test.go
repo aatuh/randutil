@@ -58,3 +58,14 @@ func TestPickByProbabilityEdgeCases(t *testing.T) {
 		t.Error("Expected error for probability > 1")
 	}
 }
+
+func TestPickByProbabilityZeroRejectsExactZeroDraw(t *testing.T) {
+	gen := New[int](&fixedFloatRNG{values: []float64{0}})
+	got, err := gen.PickByProbability([]int{1}, 0)
+	if err != nil {
+		t.Fatalf("PickByProbability error: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("PickByProbability selected with p=0 and u=0: %v", got)
+	}
+}
