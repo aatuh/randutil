@@ -28,6 +28,9 @@ func (r *Recorder) Read(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
+	if r == nil {
+		return 0, core.ErrSourceClosed
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.closed || r.src == nil {
@@ -42,6 +45,9 @@ func (r *Recorder) Read(p []byte) (int, error) {
 
 // Bytes returns a copy of the recorded bytes.
 func (r *Recorder) Bytes() []byte {
+	if r == nil {
+		return nil
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	out := make([]byte, len(r.buf))
@@ -51,6 +57,9 @@ func (r *Recorder) Bytes() []byte {
 
 // Reset clears the recorded bytes.
 func (r *Recorder) Reset() {
+	if r == nil {
+		return
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	core.Zero(r.buf)
@@ -64,6 +73,9 @@ func (r *Recorder) Replay() core.Source {
 
 // Close closes the underlying source if it is closable and zeroes the buffer.
 func (r *Recorder) Close() error {
+	if r == nil {
+		return nil
+	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	if r.closed {

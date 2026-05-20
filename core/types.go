@@ -7,8 +7,9 @@ type Source interface {
 	Read(p []byte) (int, error)
 }
 
-// RNG is the randomness port used across the repo. Implementations should be
-// safe for concurrent use if the underlying Source is safe.
+// RNG is the full core generator surface. Implementations should be safe for
+// concurrent use if the underlying Source is safe. Packages that only need a
+// subset should prefer a smaller local interface.
 type RNG interface {
 	Read(p []byte) (int, error)
 	Fill(p []byte) error

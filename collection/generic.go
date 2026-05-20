@@ -87,7 +87,7 @@ func weightedChoiceWithRNG[T any](rng rng, items []T, weights []float64) (T, err
 		}
 		sum += w
 	}
-	if sum <= 0 {
+	if sum <= 0 || math.IsInf(sum, 0) || math.IsNaN(sum) {
 		return z, core.ErrInvalidWeights
 	}
 	u, err := rng.Float64()
@@ -152,6 +152,9 @@ func weightedSampleWithRNG[T any](
 			}
 		}
 		key := -math.Log(u) / w
+		if key < 0 || math.IsNaN(key) || math.IsInf(key, 0) {
+			return nil, core.ErrInvalidWeights
+		}
 		keys = append(keys, kv{key: key, i: i})
 	}
 	if len(keys) == 0 {

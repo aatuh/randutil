@@ -44,7 +44,7 @@ func main() {
     log.Fatal(err)
   }
 
-  fmt.Println(len(b), tok, u4, when)
+  fmt.Println(len(b), len(tok), u4, when)
 }
 ```
 
@@ -88,7 +88,7 @@ TOKENS / AUTH unless the seed is high-entropy and kept secret.
 ws := randutil.NewWorkspace(randutil.SecureRoot())
 sessions, _ := ws.Rand("sessions")
 tok, _ := sessions.String.TokenURLSafe(24)
-fmt.Println(tok)
+fmt.Println(len(tok))
 ```
 
 For deterministic fixtures:
@@ -106,7 +106,7 @@ Sub-workspaces reduce label collisions:
 billing, _ := ws.Sub("billing")
 nonces, _ := billing.Rand("nonces")
 nonce, _ := nonces.String.TokenURLSafe(24)
-fmt.Println(nonce)
+fmt.Println(len(nonce))
 ```
 
 Workspaces can also track bytes read per cached stream:
@@ -136,6 +136,8 @@ fmt.Println(id)
 
 Workspace streams are derived via HKDF-SHA256 + ChaCha20; for strict FIPS/OS
 RNG compliance, use `crypto/rand.Reader` directly.
+Workspace serializes custom root derivation and stream reads, so `Stream`,
+`Rand`, and `Sub` are safe for concurrent use.
 
 For a fast derived CSPRNG seeded from `crypto/rand`:
 
@@ -161,6 +163,8 @@ go build -tags=randutil_must ./...
 - No process-wide mutable state; each generator binds its own source/RNG.
 - Generators are concurrency-safe iff the injected RNG is; `crypto/rand.Reader`
   is safe for concurrent use.
+- Workspace serializes root derivation and stream reads for its returned
+  streams.
 - For high-throughput workloads, wrap sources with `adapters.BufferedSource`
   to amortize small reads.
 - Unbiased sampling (rejection sampling for ranges/charsets).

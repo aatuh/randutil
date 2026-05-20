@@ -54,6 +54,9 @@ func TestWeightedChoiceErrors(t *testing.T) {
 	if _, err := WeightedChoice(items, []float64{-1, 2}); !errors.Is(err, core.ErrInvalidWeights) {
 		t.Fatalf("expected invalid weights, got %v", err)
 	}
+	if _, err := WeightedChoice(items, []float64{math.MaxFloat64, math.MaxFloat64}); !errors.Is(err, core.ErrInvalidWeights) {
+		t.Fatalf("expected invalid weights for overflowing sum, got %v", err)
+	}
 	if _, err := WeightedChoice(items, []float64{0, 0}); !errors.Is(err, core.ErrInvalidWeights) {
 		t.Fatalf("expected invalid weights for zero sum, got %v", err)
 	}
@@ -90,6 +93,13 @@ func TestWeightedSampleErrors(t *testing.T) {
 	}
 	if _, err := WeightedSample(items, []float64{0, 0}, 1); err == nil || !errors.Is(err, core.ErrInvalidWeights) {
 		t.Fatalf("expected invalid weights error, got %v", err)
+	}
+}
+
+func TestWeightedSampleRejectsNonFiniteKey(t *testing.T) {
+	rng := &fixedFloatRNG{values: []float64{math.SmallestNonzeroFloat64}}
+	if _, err := weightedSampleWithRNG(rng, []int{1}, []float64{math.SmallestNonzeroFloat64}, 1); !errors.Is(err, core.ErrInvalidWeights) {
+		t.Fatalf("expected invalid weights for non-finite weighted key, got %v", err)
 	}
 }
 
@@ -181,4 +191,26 @@ func TestFloat64HighPrecision(t *testing.T) {
 	if math.Abs(mean-0.5) > 0.2 {
 		t.Fatalf("Float64 mean too far from 0.5: %f", mean)
 	}
+}
+
+type fixedFloatRNG struct {
+	values []float64
+	next   int
+}
+
+func (r *fixedFloatRNG) Uint64n(uint64) (uint64, error) {
+	return 0, nil
+}
+
+func (r *fixedFloatRNG) Intn(int) (int, error) {
+	return 0, nil
+}
+
+func (r *fixedFloatRNG) Float64() (float64, error) {
+	if r.next >= len(r.values) {
+		return 0.5, nil
+	}
+	v := r.values[r.next]
+	r.next++
+	return v, nil
 }

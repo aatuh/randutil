@@ -63,7 +63,8 @@ func (g *Generator) Close() error {
 	return nil
 }
 
-// Read implements io.Reader by delegating to the generator's source.
+// Read implements io.Reader and fills p completely unless the source returns an
+// error.
 //
 // Parameters:
 //   - p: The byte slice to read into.

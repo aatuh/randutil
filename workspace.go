@@ -35,16 +35,18 @@ type streamEntry struct {
 // Sub derives nested workspaces, Usage tracks bytes per cached label,
 // and Close attempts to zero internal state.
 //
-// Concurrency: Stream and Rand are safe for concurrent use.
+// Concurrency: Stream, Rand, and Sub are safe for concurrent use. Workspace
+// serializes root derivation and wraps stream sources to serialize reads.
 type Workspace struct {
 	root      Root
 	maxCached int
 	usageHook UsageHook
 
-	mu      sync.Mutex
-	streams map[string]*streamEntry
-	order   []string
-	closed  bool
+	deriveMu sync.Mutex
+	mu       sync.Mutex
+	streams  map[string]*streamEntry
+	order    []string
+	closed   bool
 }
 
 // WorkspaceOptions configure stream caching.
@@ -106,7 +108,7 @@ func (w *Workspace) Stream(label string) (*core.Generator, error) {
 	}
 	w.mu.Unlock()
 
-	src, err := w.root.Derive(label)
+	src, err := w.derive(label)
 	if err != nil {
 		return nil, err
 	}
@@ -118,9 +120,13 @@ func (w *Workspace) Stream(label string) (*core.Generator, error) {
 		}
 	}
 	counter := adapters.NewCountingSource(src, hook)
-	gen := core.New(counter)
+	gen := core.New(adapters.LockedSource(counter))
 
 	if w.maxCached == 0 {
+		if err := w.errIfClosed(); err != nil {
+			_ = gen.Close()
+			return nil, err
+		}
 		return gen, nil
 	}
 
@@ -179,7 +185,7 @@ func (w *Workspace) Sub(label string) (*Workspace, error) {
 	}
 	w.mu.Unlock()
 
-	src, err := w.root.Derive(subRootLabelPrefix + label)
+	src, err := w.derive(subRootLabelPrefix + label)
 	if err != nil {
 		return nil, err
 	}
@@ -193,6 +199,10 @@ func (w *Workspace) Sub(label string) (*Workspace, error) {
 	}
 	if closer, ok := src.(io.Closer); ok {
 		_ = closer.Close()
+	}
+	if err := w.errIfClosed(); err != nil {
+		core.Zero(seed[:])
+		return nil, err
 	}
 	root := newSeedRoot(seed[:])
 	core.Zero(seed[:])
@@ -261,12 +271,40 @@ func (w *Workspace) Close() error {
 			firstErr = err
 		}
 	}
+	w.deriveMu.Lock()
+	defer w.deriveMu.Unlock()
 	if closer, ok := w.root.(interface{ Close() error }); ok {
 		if err := closer.Close(); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}
 	return firstErr
+}
+
+func (w *Workspace) derive(label string) (core.Source, error) {
+	w.deriveMu.Lock()
+	defer w.deriveMu.Unlock()
+
+	if err := w.errIfClosed(); err != nil {
+		return nil, err
+	}
+	src, err := w.root.Derive(label)
+	if err != nil {
+		return nil, err
+	}
+	if src == nil {
+		return nil, core.ErrSourceClosed
+	}
+	return src, nil
+}
+
+func (w *Workspace) errIfClosed() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if w.closed {
+		return core.ErrWorkspaceClosed
+	}
+	return nil
 }
 
 func (w *Workspace) evictOldestLocked() {

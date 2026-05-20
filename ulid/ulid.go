@@ -2,7 +2,6 @@ package ulid
 
 import (
 	"errors"
-	"strings"
 )
 
 // ULID is the canonical string form of a ULID.
@@ -21,7 +20,21 @@ func Parse(s string) (ULID, error) {
 	if len(s) != encodedLen {
 		return "", ErrInvalidULID
 	}
-	upper := strings.ToUpper(s)
+	var b [encodedLen]byte
+	for i := 0; i < encodedLen; i++ {
+		c := s[i]
+		if c >= 'a' && c <= 'z' {
+			c -= 'a' - 'A'
+		}
+		if !isULIDChar(c) {
+			return "", ErrInvalidULID
+		}
+		b[i] = c
+	}
+	if b[0] > '7' {
+		return "", ErrInvalidULID
+	}
+	upper := string(b[:])
 	if _, err := ulidEncoding.DecodeString(upper); err != nil {
 		return "", ErrInvalidULID
 	}
@@ -30,3 +43,22 @@ func Parse(s string) (ULID, error) {
 
 // String returns the ULID string.
 func (u ULID) String() string { return string(u) }
+
+func isULIDChar(c byte) bool {
+	switch {
+	case c >= '0' && c <= '9':
+		return true
+	case c >= 'A' && c <= 'H':
+		return true
+	case c >= 'J' && c <= 'K':
+		return true
+	case c >= 'M' && c <= 'N':
+		return true
+	case c >= 'P' && c <= 'T':
+		return true
+	case c >= 'V' && c <= 'Z':
+		return true
+	default:
+		return false
+	}
+}

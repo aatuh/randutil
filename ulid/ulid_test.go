@@ -88,4 +88,10 @@ func TestParse(t *testing.T) {
 	if _, err := Parse("invalid"); err == nil {
 		t.Fatalf("expected error for invalid ULID")
 	}
+	if _, err := Parse(strings.Repeat("0", 24) + "\u017f"); err == nil {
+		t.Fatalf("expected error for non-ASCII ULID")
+	}
+	if _, err := Parse("80000000000000000000000000"); err == nil {
+		t.Fatalf("expected error for overflow ULID")
+	}
 }
