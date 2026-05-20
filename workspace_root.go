@@ -10,7 +10,8 @@ import (
 
 // Root derives domain-separated entropy streams for a workspace. Workspace
 // serializes Derive calls for custom roots and serializes reads from streams it
-// returns through Stream/Rand.
+// returns through Stream/Rand. If workspace caching is disabled, callers own
+// returned streams and should close them.
 type Root interface {
 	Derive(label string) (core.Source, error)
 }

@@ -27,7 +27,7 @@ func NewZipf(s, v float64, imax int) (*Zipf, error) {
 
 // Zipf builds a Zipf sampler using the generator's entropy source.
 func (g *Generator) Zipf(s, v float64, imax int) (*Zipf, error) {
-	if math.IsNaN(s) || math.IsNaN(v) || s <= 0 || v < 0 || imax < 1 {
+	if !isFinite(s) || !isFinite(v) || s <= 0 || v < 0 || imax < 1 {
 		return nil, errors.New("randutil: invalid s, v, or imax")
 	}
 	z := &Zipf{rng: g.rng, s: s, v: v, imax: imax}

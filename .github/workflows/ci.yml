@@ -54,7 +54,7 @@ jobs:
         run: make lint
       - name: Govulncheck
         id: govulncheck
-        run: go tool golang.org/x/vuln/cmd/govulncheck -format sarif ./... > govulncheck.sarif
+        run: ./.tools/bin/govulncheck -format sarif ./... > govulncheck.sarif
         continue-on-error: true
       - name: Upload govulncheck SARIF
         if: always()
@@ -67,7 +67,7 @@ jobs:
         run: exit 1
       - name: Gosec
         id: gosec
-        run: go tool github.com/securego/gosec/v2/cmd/gosec -fmt=sarif -out=gosec.sarif ./...
+        run: ./.tools/bin/gosec -fmt=sarif -out=gosec.sarif ./...
         continue-on-error: true
       - name: Upload gosec SARIF
         if: always()

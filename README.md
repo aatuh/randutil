@@ -136,8 +136,13 @@ fmt.Println(id)
 
 Workspace streams are derived via HKDF-SHA256 + ChaCha20; for strict FIPS/OS
 RNG compliance, use `crypto/rand.Reader` directly.
+Each derived stream is limited to 256 GiB of output per seed+label and returns
+`core.ErrSourceExhausted` if that limit would be exceeded; derive a fresh label
+for longer high-throughput streams.
 Workspace serializes custom root derivation and stream reads, so `Stream`,
 `Rand`, and `Sub` are safe for concurrent use.
+When caching is disabled with `WorkspaceOptions{MaxCached: -1}`, returned
+streams are not retained by the workspace; callers own and should close them.
 
 For a fast derived CSPRNG seeded from `crypto/rand`:
 
@@ -165,6 +170,8 @@ go build -tags=randutil_must ./...
   is safe for concurrent use.
 - Workspace serializes root derivation and stream reads for its returned
   streams.
+- HKDF/ChaCha20-derived streams return `core.ErrSourceExhausted` before the
+  ChaCha20 per-stream counter limit is exceeded.
 - For high-throughput workloads, wrap sources with `adapters.BufferedSource`
   to amortize small reads.
 - Unbiased sampling (rejection sampling for ranges/charsets).

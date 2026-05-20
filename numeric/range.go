@@ -57,7 +57,7 @@ func AnyInt32() (int32, error) {
 // PositiveInt32 returns a secure random positive int32.
 //
 // Returns:
-//   - int32: A random int32 in [1, 2147483648].
+//   - int32: A random int32 in [1, 2147483647].
 //   - error: An error if crypto/rand fails.
 func PositiveInt32() (int32, error) {
 	return Int32Range(1, maxInt32)
@@ -66,7 +66,7 @@ func PositiveInt32() (int32, error) {
 // NegativeInt32 returns a secure random negative int32.
 //
 // Returns:
-//   - int32: A random int32 in [-2147483647, -1].
+//   - int32: A random int32 in [-2147483648, -1].
 //   - error: An error if crypto/rand fails.
 func NegativeInt32() (int32, error) {
 	return Int32Range(minInt32, -1)

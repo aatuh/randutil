@@ -10,6 +10,7 @@ import (
 
 var (
 	errInvalidMeanStd      = errors.New("randutil: invalid mean/stddev")
+	errNonFiniteParameter  = errors.New("randutil: parameter must be finite")
 	errInvalidUniformRange = errors.New("randutil: min must be < max")
 )
 
@@ -47,7 +48,7 @@ func Default() *Generator {
 // Bernoulli returns true with probability p and false otherwise using the generator's entropy source.
 // p must be in [0,1].
 func (g *Generator) Bernoulli(p float64) (bool, error) {
-	if math.IsNaN(p) || p < 0 || p > 1 {
+	if !isFinite(p) || p < 0 || p > 1 {
 		return false, core.ErrInvalidProbability
 	}
 	u, err := g.rng.Float64()
@@ -66,7 +67,7 @@ func (g *Generator) Categorical(weights []float64) (int, error) {
 	}
 	var sum float64
 	for _, w := range weights {
-		if math.IsNaN(w) || math.IsInf(w, 0) || w < 0 {
+		if !isFinite(w) || w < 0 {
 			return 0, core.ErrInvalidWeights
 		}
 		sum += w
@@ -92,6 +93,9 @@ func (g *Generator) Categorical(weights []float64) (int, error) {
 // Exponential returns a random value from an exponential distribution
 // with rate parameter lambda using the generator's entropy source.
 func (g *Generator) Exponential(lambda float64) (float64, error) {
+	if !isFinite(lambda) {
+		return 0, errNonFiniteParameter
+	}
 	if lambda <= 0 {
 		return 0, core.ErrNonPositiveRate
 	}
@@ -105,7 +109,7 @@ func (g *Generator) Exponential(lambda float64) (float64, error) {
 // Normal returns a random value from a normal distribution
 // with mean mu and standard deviation sigma using the generator's entropy source.
 func (g *Generator) Normal(mu, sigma float64) (float64, error) {
-	if math.IsNaN(mu) || math.IsNaN(sigma) {
+	if !isFinite(mu) || !isFinite(sigma) {
 		return 0, errInvalidMeanStd
 	}
 	if sigma < 0 {
@@ -157,7 +161,7 @@ func (g *Generator) standardNormal() (float64, error) {
 // Uniform returns a random value from a uniform distribution
 // in [min, max) using the generator's entropy source.
 func (g *Generator) Uniform(minVal, maxVal float64) (float64, error) {
-	if minVal >= maxVal {
+	if !isFinite(minVal) || !isFinite(maxVal) || minVal >= maxVal {
 		return 0, errInvalidUniformRange
 	}
 	u, err := g.rng.Float64()
@@ -170,6 +174,9 @@ func (g *Generator) Uniform(minVal, maxVal float64) (float64, error) {
 // Poisson returns a random value from a Poisson distribution
 // with parameter lambda using the generator's entropy source.
 func (g *Generator) Poisson(lambda float64) (int, error) {
+	if !isFinite(lambda) {
+		return 0, errNonFiniteParameter
+	}
 	if lambda <= 0 {
 		return 0, core.ErrNonPositiveRate
 	}
@@ -233,6 +240,9 @@ func (g *Generator) poissonPTRS(lambda float64) (int, error) {
 // Gamma returns a random value from a gamma distribution
 // with shape alpha and rate beta using the generator's entropy source.
 func (g *Generator) Gamma(alpha, beta float64) (float64, error) {
+	if !isFinite(alpha) || !isFinite(beta) {
+		return 0, errNonFiniteParameter
+	}
 	if alpha <= 0 {
 		return 0, core.ErrNonPositiveBound
 	}
@@ -247,6 +257,9 @@ func (g *Generator) Gamma(alpha, beta float64) (float64, error) {
 }
 
 func (g *Generator) gammaStandard(alpha float64) (float64, error) {
+	if !isFinite(alpha) {
+		return 0, errNonFiniteParameter
+	}
 	if alpha <= 0 {
 		return 0, core.ErrNonPositiveBound
 	}
@@ -295,4 +308,8 @@ func log1pexp(x float64) float64 {
 		return x + math.Log1p(math.Exp(-x))
 	}
 	return math.Log1p(math.Exp(x))
+}
+
+func isFinite(v float64) bool {
+	return !math.IsNaN(v) && !math.IsInf(v, 0)
 }

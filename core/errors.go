@@ -26,6 +26,7 @@ var (
 	ErrResultOutOfRange        = errors.New("randutil: result out of range")
 
 	ErrSourceClosed          = errors.New("randutil: source closed")
+	ErrSourceExhausted       = errors.New("randutil: source exhausted")
 	ErrWorkspaceClosed       = errors.New("randutil: workspace closed")
 	ErrDeterministicDisabled = errors.New("randutil: deterministic sources disabled")
 )

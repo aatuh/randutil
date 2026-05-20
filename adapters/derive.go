@@ -17,7 +17,9 @@ const (
 // DeriveSource returns a domain-separated stream derived from seed and label.
 // The stream is cryptographically strong if the seed is high entropy and secret.
 // It uses HKDF-SHA256 + ChaCha20; for FIPS/OS RNG compliance use crypto/rand
-// directly instead of derived streams.
+// directly instead of derived streams. Each derived stream is limited to
+// 256 GiB of output and returns core.ErrSourceExhausted if that limit would be
+// exceeded.
 func DeriveSource(seed []byte, label string) (core.Source, error) {
 	key, nonce, err := deriveKeyNonce(seed, label)
 	if err != nil {

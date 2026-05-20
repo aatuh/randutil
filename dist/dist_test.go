@@ -99,6 +99,65 @@ func TestExponential(t *testing.T) {
 	}
 }
 
+func TestDistributionsRejectNonFiniteParameters(t *testing.T) {
+	gen := New(nil)
+	nonFinite := []float64{math.NaN(), math.Inf(1), math.Inf(-1)}
+
+	for _, v := range nonFinite {
+		if _, err := gen.Exponential(v); err == nil {
+			t.Fatalf("Exponential(%v) error = nil", v)
+		}
+		if _, err := gen.Poisson(v); err == nil {
+			t.Fatalf("Poisson(%v) error = nil", v)
+		}
+	}
+
+	for _, tc := range []struct {
+		name string
+		min  float64
+		max  float64
+	}{
+		{name: "nan min", min: math.NaN(), max: 1},
+		{name: "nan max", min: 0, max: math.NaN()},
+		{name: "negative infinity min", min: math.Inf(-1), max: 1},
+		{name: "positive infinity max", min: 0, max: math.Inf(1)},
+	} {
+		if _, err := gen.Uniform(tc.min, tc.max); err == nil {
+			t.Fatalf("Uniform %s error = nil", tc.name)
+		}
+	}
+
+	for _, v := range nonFinite {
+		if _, err := gen.Normal(v, 1); err == nil {
+			t.Fatalf("Normal(%v, 1) error = nil", v)
+		}
+		if _, err := gen.Normal(0, v); err == nil {
+			t.Fatalf("Normal(0, %v) error = nil", v)
+		}
+		if _, err := gen.Gamma(v, 1); err == nil {
+			t.Fatalf("Gamma(%v, 1) error = nil", v)
+		}
+		if _, err := gen.Gamma(1, v); err == nil {
+			t.Fatalf("Gamma(1, %v) error = nil", v)
+		}
+	}
+
+	for _, tc := range []struct {
+		name string
+		s    float64
+		v    float64
+	}{
+		{name: "nan s", s: math.NaN(), v: 1},
+		{name: "infinite s", s: math.Inf(1), v: 1},
+		{name: "nan v", s: 1, v: math.NaN()},
+		{name: "infinite v", s: 1, v: math.Inf(1)},
+	} {
+		if _, err := gen.Zipf(tc.s, tc.v, 10); err == nil {
+			t.Fatalf("Zipf %s error = nil", tc.name)
+		}
+	}
+}
+
 func TestExponentialErrorPropagation(t *testing.T) {
 	gen := New(core.New(testutil.ErrReader{Err: io.ErrUnexpectedEOF}))
 	if _, err := gen.Exponential(1); err == nil {

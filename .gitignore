@@ -1,0 +1,5 @@
+.tools/
+.trash/
+.audits/
+.workspace.code-workspace
+*.test

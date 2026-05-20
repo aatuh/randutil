@@ -8,14 +8,15 @@ import (
 
 const fastDeriveLabel = "randutil fast v1"
 
-// FastSource returns a fast CSPRNG source derived from crypto/rand.
-// For strict FIPS/OS RNG compliance, use crypto/rand.Reader directly.
+// FastSource returns a fast CSPRNG source derived from crypto/rand. It inherits
+// the 256 GiB per-stream limit of DeriveSource. For strict FIPS/OS RNG
+// compliance, use crypto/rand.Reader directly.
 func FastSource() (core.Source, error) {
 	return FastSourceWithSource(nil)
 }
 
-// FastSourceWithSource returns a fast CSPRNG source derived from src.
-// If src is nil, crypto/rand.Reader is used.
+// FastSourceWithSource returns a fast CSPRNG source derived from src. If src is
+// nil, crypto/rand.Reader is used.
 func FastSourceWithSource(src core.Source) (core.Source, error) {
 	if src == nil {
 		src = CryptoSource()

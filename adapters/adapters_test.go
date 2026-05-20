@@ -88,6 +88,47 @@ func TestDeriveSourceWithLabel(t *testing.T) {
 	}
 }
 
+func TestChaChaSourceReturnsErrorWhenExhausted(t *testing.T) {
+	var key [32]byte
+	var nonce [12]byte
+	src, err := newChaChaSourceWithLimit(key, nonce, 4)
+	if err != nil {
+		t.Fatalf("newChaChaSourceWithLimit error: %v", err)
+	}
+
+	buf := make([]byte, 4)
+	if n, err := src.Read(buf); n != 4 || err != nil {
+		t.Fatalf("first Read = (%d, %v), want (4, nil)", n, err)
+	}
+
+	buf = []byte{1, 2, 3}
+	n, err := src.Read(buf)
+	if n != 0 || !errors.Is(err, core.ErrSourceExhausted) {
+		t.Fatalf("exhausted Read = (%d, %v), want (0, ErrSourceExhausted)", n, err)
+	}
+	if !bytes.Equal(buf, []byte{0, 0, 0}) {
+		t.Fatalf("exhausted Read did not zero buffer: %v", buf)
+	}
+}
+
+func TestChaChaSourceRejectsOversizedRead(t *testing.T) {
+	var key [32]byte
+	var nonce [12]byte
+	src, err := newChaChaSourceWithLimit(key, nonce, 4)
+	if err != nil {
+		t.Fatalf("newChaChaSourceWithLimit error: %v", err)
+	}
+
+	buf := []byte{1, 2, 3, 4, 5}
+	n, err := src.Read(buf)
+	if n != 0 || !errors.Is(err, core.ErrSourceExhausted) {
+		t.Fatalf("oversized Read = (%d, %v), want (0, ErrSourceExhausted)", n, err)
+	}
+	if !bytes.Equal(buf, []byte{0, 0, 0, 0, 0}) {
+		t.Fatalf("oversized Read did not zero buffer: %v", buf)
+	}
+}
+
 func TestDeterministicSourceConstructorDoesNotPanic(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {

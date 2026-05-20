@@ -7,6 +7,12 @@ export GOWORK
 GOLANGCI_LINT := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 GOSEC := github.com/securego/gosec/v2/cmd/gosec
 GOVULNCHECK := golang.org/x/vuln/cmd/govulncheck
+TOOLS_DIR := tools
+TOOLS_BIN := $(CURDIR)/.tools/bin
+TOOLS_STAMP := $(TOOLS_BIN)/.stamp
+GOLANGCI_LINT_BIN := $(TOOLS_BIN)/golangci-lint
+GOSEC_BIN := $(TOOLS_BIN)/gosec
+GOVULNCHECK_BIN := $(TOOLS_BIN)/govulncheck
 FUZZTIME ?= 10s
 
 .PHONY: help test test-ci test-must test-race vet lint gosec vuln tidy fmt tools fuzz-smoke clean finalize
@@ -20,25 +26,30 @@ help: ## Show help
 			printf "  %-14s %s\n", $$1, $$2 \
 		}' $(MAKEFILE_LIST)
 
-tools: ## Verify pinned Go tools from go.mod
-	@$(GO) tool $(GOLANGCI_LINT) version >/dev/null
-	@$(GO) tool $(GOSEC) -version >/dev/null
-	@$(GO) tool $(GOVULNCHECK) -version >/dev/null
+tools: $(TOOLS_STAMP) ## Install pinned Go tools from tools/go.mod
+
+$(TOOLS_STAMP): $(TOOLS_DIR)/go.mod $(TOOLS_DIR)/go.sum
+	@mkdir -p $(TOOLS_BIN)
+	@GOBIN=$(TOOLS_BIN) $(GO) -C $(TOOLS_DIR) install $(GOLANGCI_LINT)
+	@GOBIN=$(TOOLS_BIN) $(GO) -C $(TOOLS_DIR) install $(GOSEC)
+	@GOBIN=$(TOOLS_BIN) $(GO) -C $(TOOLS_DIR) install $(GOVULNCHECK)
+	@touch $(TOOLS_STAMP)
 
 fmt: ## Run gofmt
 	$(GO) fmt ./...
 
 lint: tools ## Run golangci-lint
-	$(GO) tool $(GOLANGCI_LINT) run ./...
+	$(GOLANGCI_LINT_BIN) run ./...
 
 vuln: tools ## Run govulncheck
-	$(GO) tool $(GOVULNCHECK) ./...
+	$(GOVULNCHECK_BIN) ./...
 
 gosec: tools ## Run gosec
-	$(GO) tool $(GOSEC) ./...
+	$(GOSEC_BIN) ./...
 
 tidy: ## Run go mod tidy
 	$(GO) mod tidy
+	$(GO) -C $(TOOLS_DIR) mod tidy
 
 test: ## Run unit tests
 	$(GO) test ./...

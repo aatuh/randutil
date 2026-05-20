@@ -52,7 +52,8 @@ type Workspace struct {
 // WorkspaceOptions configure stream caching.
 type WorkspaceOptions struct {
 	// MaxCached is the maximum number of cached streams. Use a negative value
-	// to disable caching. If zero, a default is applied.
+	// to disable caching. If caching is disabled, callers own returned streams
+	// and should close them. If zero, a default is applied.
 	MaxCached int
 
 	// UsageHook receives byte deltas per label when streams are read.
