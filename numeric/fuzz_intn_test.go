@@ -1,6 +1,11 @@
 package numeric
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/aatuh/randutil/v2/core"
+	"github.com/aatuh/randutil/v2/internal/testutil"
+)
 
 // Run with: go test -run=^$ -fuzz=Fuzz -fuzztime=5s
 func FuzzUint64n(f *testing.F) {
@@ -16,7 +21,8 @@ func FuzzUint64n(f *testing.F) {
 			}
 			return
 		}
-		v, err := Uint64n(n)
+		gen := New(core.New(testutil.NewSeqReader(testutil.Uint64Bytes(0))))
+		v, err := gen.Uint64n(n)
 		if err != nil {
 			t.Fatalf("Uint64n error: %v", err)
 		}
