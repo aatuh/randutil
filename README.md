@@ -10,13 +10,22 @@ NanoIDs, and sampling utilities.
 go get github.com/aatuh/randutil/v2
 ```
 
-Requires Go 1.24.0+.
+Requires Go 1.25.0+.
 
 Production-readiness notes:
 
 - [Changelog](CHANGELOG.md)
 - [Release process](docs/release.md)
 - [Benchmark process](docs/benchmarks.md)
+
+Production security boundaries:
+
+- `randutil` is not a FIPS module or audited cryptographic library.
+- Default constructors use `crypto/rand.Reader`; use `crypto/rand.Reader`
+  directly when strict OS RNG or FIPS compliance is required.
+- Derived and deterministic streams depend on seed quality. Use
+  deterministic roots only for tests/fixtures unless the seed is high-entropy,
+  secret, and acceptable for your threat model.
 
 ## Quick start
 
@@ -171,7 +180,8 @@ go build -tags=randutil_must ./...
 ## Security model
 
 - Default entropy is `crypto/rand.Reader`.
-- No process-wide mutable state; each generator binds its own source/RNG.
+- No process-wide configurable RNG state; package defaults bind their own
+  source/RNG.
 - Generators are concurrency-safe iff the injected RNG is; `crypto/rand.Reader`
   is safe for concurrent use.
 - Workspace serializes root derivation and stream reads for its returned
@@ -218,6 +228,9 @@ ULID / NanoID:
 u, _ := ulid.ID()
 id, _ := nanoid.ID()
 ```
+
+UUID v7 and ULID values encode time for ordering, but they are not monotonic
+sequence counters within the same millisecond.
 
 Distributions:
 

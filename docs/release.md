@@ -7,9 +7,11 @@ new major module path.
 
 ## Compatibility
 
-- Public Go floor: `go 1.24.0` from `go.mod`.
+- Public Go floor: `go 1.25.0` from `go.mod`.
 - CI uses `actions/setup-go` with `go-version-file: go.mod`.
 - Local audit toolchain observed during this update: `go1.26.3-X:nodwarf5`.
+- The Go floor was raised from 1.24.0 because `golang.org/x/crypto v0.51.0`
+  declares `go 1.25.0`.
 - Newer Go versions are expected to work unless CI or local checks show a
   regression; do not claim support for untested older Go versions.
 
