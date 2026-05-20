@@ -12,12 +12,12 @@ import (
 //
 // Concurrency: safe for concurrent use if the underlying RNG is safe.
 type Generator struct {
-	rng     core.RNG
+	rng     rng
 	strings *randstring.Generator
 }
 
 // New returns an email Generator. If rng is nil, crypto/rand is used.
-func New(rng core.RNG) *Generator {
+func New(rng rng) *Generator {
 	if rng == nil {
 		rng = core.New(nil)
 	}
@@ -75,7 +75,7 @@ func (g *Generator) Email(opts Options) (string, error) {
 		return g.Simple(opts.TotalLength)
 	}
 
-	tld := ""
+	var tld string
 	switch opts.TLD {
 	case "":
 		tld = ".com"

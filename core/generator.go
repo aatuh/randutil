@@ -52,6 +52,17 @@ func (g *Generator) Source() Source {
 	return g.source()
 }
 
+// Close closes the underlying source if it is closable.
+func (g *Generator) Close() error {
+	if g == nil || g.src == nil {
+		return nil
+	}
+	if closer, ok := g.src.(io.Closer); ok {
+		return closer.Close()
+	}
+	return nil
+}
+
 // Read implements io.Reader by delegating to the generator's source.
 //
 // Parameters:

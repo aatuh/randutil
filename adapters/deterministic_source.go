@@ -1,60 +1,51 @@
+//go:build !randutil_policy
+// +build !randutil_policy
+
 package adapters
 
 import (
 	"crypto/sha256"
-	"sync"
-
-	"golang.org/x/crypto/chacha20"
 
 	"github.com/aatuh/randutil/v2/core"
 )
 
-type deterministicSource struct {
-	mu     sync.Mutex
-	cipher *chacha20.Cipher
-}
-
 // DeterministicSource returns a reproducible stream based on seed.
 //
-// WARNING: This is deterministic. Do not use for security unless the seed is
-// high-entropy and kept secret. Intended for tests, benchmarks, and replayable
-// simulations.
-func DeterministicSource(seed []byte) core.Source {
+// WARNING: This is deterministic. DO NOT USE FOR TOKENS / AUTH unless the seed
+// is high-entropy and kept secret. Intended for tests, benchmarks, and
+// replayable simulations.
+//
+// Returns an error when policy mode disables deterministic sources.
+func DeterministicSource(seed []byte) (core.Source, error) {
 	return DeterministicSourceWithLabel(seed, "")
 }
 
 // DeterministicSourceWithLabel returns a reproducible stream based on seed and label.
 // Use labels to derive independent deterministic streams from the same seed.
 //
-// WARNING: This is deterministic. Do not use for security unless the seed is
-// high-entropy and kept secret. Intended for tests, benchmarks, and replayable
-// simulations.
-func DeterministicSourceWithLabel(seed []byte, label string) core.Source {
+// WARNING: This is deterministic. DO NOT USE FOR TOKENS / AUTH unless the seed
+// is high-entropy and kept secret. Intended for tests, benchmarks, and
+// replayable simulations.
+//
+// Returns an error when policy mode disables deterministic sources.
+func DeterministicSourceWithLabel(seed []byte, label string) (core.Source, error) {
 	if label == "" {
 		return deterministicSourceFromSeed(seed)
 	}
 	derived := deriveLabelSeed(seed, label)
-	return deterministicSourceFromSeed(derived[:])
+	src, err := deterministicSourceFromSeed(derived[:])
+	core.Zero(derived[:])
+	return src, err
 }
 
-func deterministicSourceFromSeed(seed []byte) core.Source {
+func deterministicSourceFromSeed(seed []byte) (core.Source, error) {
 	key := deriveKey(seed, "key")
-	nonce := deriveKey(seed, "nonce")
-	cipher, err := chacha20.NewUnauthenticatedCipher(key[:], nonce[:12])
-	if err != nil {
-		panic("randutil: deterministic source cipher init failed: " + err.Error())
-	}
-	return &deterministicSource{cipher: cipher}
-}
-
-func (d *deterministicSource) Read(p []byte) (int, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	for i := range p {
-		p[i] = 0
-	}
-	d.cipher.XORKeyStream(p, p)
-	return len(p), nil
+	nonceKey := deriveKey(seed, "nonce")
+	var nonce [12]byte
+	copy(nonce[:], nonceKey[:12])
+	src, err := newChaChaSource(key, nonce)
+	core.Zero(nonceKey[:])
+	return src, err
 }
 
 func deriveKey(seed []byte, label string) [32]byte {

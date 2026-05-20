@@ -1,6 +1,7 @@
 package dist
 
 import (
+	"errors"
 	"math"
 	"testing"
 
@@ -52,7 +53,14 @@ func TestDistributionStats(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gen := New(core.New(adapters.DeterministicSource([]byte(tc.name))))
+			src, err := adapters.DeterministicSource([]byte(tc.name))
+			if err != nil {
+				if errors.Is(err, core.ErrDeterministicDisabled) {
+					t.Skip("deterministic sources disabled")
+				}
+				t.Fatalf("DeterministicSource error: %v", err)
+			}
+			gen := New(core.New(src))
 			mean, variance := sampleStats(t, n, func() (float64, error) {
 				return tc.sample(gen)
 			})
@@ -61,7 +69,14 @@ func TestDistributionStats(t *testing.T) {
 	}
 
 	t.Run("poisson", func(t *testing.T) {
-		gen := New(core.New(adapters.DeterministicSource([]byte("poisson"))))
+		src, err := adapters.DeterministicSource([]byte("poisson"))
+		if err != nil {
+			if errors.Is(err, core.ErrDeterministicDisabled) {
+				t.Skip("deterministic sources disabled")
+			}
+			t.Fatalf("DeterministicSource error: %v", err)
+		}
+		gen := New(core.New(src))
 		mean, variance := sampleStats(t, n, func() (float64, error) {
 			v, err := gen.Poisson(12)
 			return float64(v), err
@@ -72,8 +87,22 @@ func TestDistributionStats(t *testing.T) {
 
 func TestDeterministicSequence(t *testing.T) {
 	seed := []byte("deterministic")
-	g1 := New(core.New(adapters.DeterministicSource(seed)))
-	g2 := New(core.New(adapters.DeterministicSource(seed)))
+	src1, err := adapters.DeterministicSource(seed)
+	if err != nil {
+		if errors.Is(err, core.ErrDeterministicDisabled) {
+			t.Skip("deterministic sources disabled")
+		}
+		t.Fatalf("DeterministicSource error: %v", err)
+	}
+	src2, err := adapters.DeterministicSource(seed)
+	if err != nil {
+		if errors.Is(err, core.ErrDeterministicDisabled) {
+			t.Skip("deterministic sources disabled")
+		}
+		t.Fatalf("DeterministicSource error: %v", err)
+	}
+	g1 := New(core.New(src1))
+	g2 := New(core.New(src2))
 	for i := 0; i < 10; i++ {
 		v1, err := g1.Normal(0, 1)
 		if err != nil {

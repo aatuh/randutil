@@ -1,3 +1,6 @@
+//go:build !randutil_policy
+// +build !randutil_policy
+
 package core_test
 
 import (
@@ -8,7 +11,11 @@ import (
 )
 
 func ExampleNew() {
-	rng := core.New(adapters.DeterministicSource([]byte("seed")))
+	src, err := adapters.DeterministicSource([]byte("seed"))
+	if err != nil {
+		panic(err)
+	}
+	rng := core.New(src)
 	b, _ := rng.Bytes(4)
 	fmt.Println(len(b))
 	// Output: 4

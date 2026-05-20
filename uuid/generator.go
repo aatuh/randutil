@@ -10,18 +10,18 @@ import (
 //
 // Concurrency: safe for concurrent use if the underlying RNG is safe.
 type Generator struct {
-	rng core.RNG
+	rng rng
 	now func() time.Time
 }
 
 // New returns a uuid Generator. If rng is nil, crypto/rand is used.
-func New(rng core.RNG) *Generator {
+func New(rng rng) *Generator {
 	return NewWithClock(rng, time.Now)
 }
 
 // NewWithClock returns a uuid Generator bound to rng and clock.
 // If rng is nil, crypto/rand is used. If now is nil, time.Now is used.
-func NewWithClock(rng core.RNG, now func() time.Time) *Generator {
+func NewWithClock(rng rng, now func() time.Time) *Generator {
 	if rng == nil {
 		rng = core.New(nil)
 	}
@@ -56,16 +56,9 @@ func (g *Generator) V4() (UUID, error) {
 	}
 	b[6] = (b[6] & 0x0f) | 0x40 // version 4
 	b[8] = (b[8] & 0x3f) | 0x80 // variant 10xx
-	return fromBytes(b), nil
-}
-
-// MustV4 returns a v4 UUID or panics on error.
-func (g *Generator) MustV4() UUID {
-	u, err := g.V4()
-	if err != nil {
-		panic(err)
-	}
-	return u
+	var uuidBytes [16]byte
+	copy(uuidBytes[:], b)
+	return fromBytes(uuidBytes), nil
 }
 
 // V7 returns a RFC 9562, variant 1 UUID v7 (time-ordered) using the generator's entropy source.
@@ -92,16 +85,9 @@ func (g *Generator) V7() (UUID, error) {
 	b[5] = byte(msu)
 	b[6] = (b[6] & 0x0f) | 0x70 // version 7
 	b[8] = (b[8] & 0x3f) | 0x80 // variant 10xx
-	return fromBytes(b), nil
-}
-
-// MustV7 returns a v7 UUID or panics on error.
-func (g *Generator) MustV7() UUID {
-	u, err := g.V7()
-	if err != nil {
-		panic(err)
-	}
-	return u
+	var uuidBytes [16]byte
+	copy(uuidBytes[:], b)
+	return fromBytes(uuidBytes), nil
 }
 
 func (g *Generator) nowUTC() time.Time {

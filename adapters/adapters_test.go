@@ -2,15 +2,18 @@ package adapters
 
 import (
 	"bytes"
+	"errors"
+	"io"
 	"testing"
 
+	"github.com/aatuh/randutil/v2/core"
 	"github.com/aatuh/randutil/v2/internal/testutil"
 )
 
 func TestDeterministicSourceConsistency(t *testing.T) {
 	seed := []byte("seed")
-	s1 := DeterministicSource(seed)
-	s2 := DeterministicSource(seed)
+	s1 := mustDeterministicSource(t, seed)
+	s2 := mustDeterministicSource(t, seed)
 	buf1 := make([]byte, 32)
 	buf2 := make([]byte, 32)
 	if _, err := s1.Read(buf1); err != nil {
@@ -23,7 +26,7 @@ func TestDeterministicSourceConsistency(t *testing.T) {
 		t.Fatalf("deterministic sources mismatch")
 	}
 
-	s3 := DeterministicSource([]byte("other"))
+	s3 := mustDeterministicSource(t, []byte("other"))
 	buf3 := make([]byte, 32)
 	if _, err := s3.Read(buf3); err != nil {
 		t.Fatalf("Read error: %v", err)
@@ -35,9 +38,35 @@ func TestDeterministicSourceConsistency(t *testing.T) {
 
 func TestDeterministicSourceWithLabel(t *testing.T) {
 	seed := []byte("seed")
-	a1 := DeterministicSourceWithLabel(seed, "alpha")
-	a2 := DeterministicSourceWithLabel(seed, "alpha")
-	b1 := DeterministicSourceWithLabel(seed, "beta")
+	a1 := mustDeterministicSourceWithLabel(t, seed, "alpha")
+	a2 := mustDeterministicSourceWithLabel(t, seed, "alpha")
+	b1 := mustDeterministicSourceWithLabel(t, seed, "beta")
+
+	bufA1 := make([]byte, 32)
+	bufA2 := make([]byte, 32)
+	bufB1 := make([]byte, 32)
+	if _, err := a1.Read(bufA1); err != nil {
+		t.Fatalf("Read error: %v", err)
+	}
+	if _, err := a2.Read(bufA2); err != nil {
+		t.Fatalf("Read error: %v", err)
+	}
+	if _, err := b1.Read(bufB1); err != nil {
+		t.Fatalf("Read error: %v", err)
+	}
+	if !bytes.Equal(bufA1, bufA2) {
+		t.Fatalf("same label produced different output")
+	}
+	if bytes.Equal(bufA1, bufB1) {
+		t.Fatalf("different labels produced identical output")
+	}
+}
+
+func TestDeriveSourceWithLabel(t *testing.T) {
+	seed := []byte("seed")
+	a1 := mustDeriveSource(t, seed, "alpha")
+	a2 := mustDeriveSource(t, seed, "alpha")
+	b1 := mustDeriveSource(t, seed, "beta")
 
 	bufA1 := make([]byte, 32)
 	bufA2 := make([]byte, 32)
@@ -65,7 +94,7 @@ func TestDeterministicSourceConstructorDoesNotPanic(t *testing.T) {
 			t.Fatalf("DeterministicSource panicked: %v", r)
 		}
 	}()
-	src := DeterministicSource([]byte("seed"))
+	src := mustDeterministicSource(t, []byte("seed"))
 	buf := make([]byte, 8)
 	if _, err := src.Read(buf); err != nil {
 		t.Fatalf("Read error: %v", err)
@@ -82,4 +111,59 @@ func TestLockedSourceWraps(t *testing.T) {
 	if !bytes.Equal(buf, want) {
 		t.Fatalf("buf = %v want %v", buf, want)
 	}
+}
+
+func TestBufferedSourceMatchesUnderlying(t *testing.T) {
+	data := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	src := testutil.NewSeqReader(data)
+	wantSrc := testutil.NewSeqReader(data)
+	bufSrc := BufferedSourceWithSize(src, 3)
+
+	sizes := []int{1, 2, 5, 9, 4, 7}
+	for _, size := range sizes {
+		got := make([]byte, size)
+		want := make([]byte, size)
+		if _, err := io.ReadFull(bufSrc, got); err != nil {
+			t.Fatalf("buffered Read error: %v", err)
+		}
+		if _, err := io.ReadFull(wantSrc, want); err != nil {
+			t.Fatalf("direct Read error: %v", err)
+		}
+		if !bytes.Equal(got, want) {
+			t.Fatalf("buffered output mismatch size %d: %v vs %v", size, got, want)
+		}
+	}
+}
+
+func mustDeterministicSource(t testing.TB, seed []byte) core.Source {
+	t.Helper()
+	src, err := DeterministicSource(seed)
+	if err != nil {
+		if errors.Is(err, core.ErrDeterministicDisabled) {
+			t.Skip("deterministic sources disabled")
+		}
+		t.Fatalf("DeterministicSource error: %v", err)
+	}
+	return src
+}
+
+func mustDeterministicSourceWithLabel(t testing.TB, seed []byte, label string) core.Source {
+	t.Helper()
+	src, err := DeterministicSourceWithLabel(seed, label)
+	if err != nil {
+		if errors.Is(err, core.ErrDeterministicDisabled) {
+			t.Skip("deterministic sources disabled")
+		}
+		t.Fatalf("DeterministicSourceWithLabel error: %v", err)
+	}
+	return src
+}
+
+func mustDeriveSource(t testing.TB, seed []byte, label string) core.Source {
+	t.Helper()
+	src, err := DeriveSource(seed, label)
+	if err != nil {
+		t.Fatalf("DeriveSource error: %v", err)
+	}
+	return src
 }

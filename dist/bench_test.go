@@ -8,7 +8,11 @@ import (
 )
 
 func BenchmarkNormal(b *testing.B) {
-	gen := New(core.New(adapters.DeterministicSource([]byte("bench"))))
+	src, err := adapters.DeterministicSource([]byte("bench"))
+	if err != nil {
+		b.Fatalf("DeterministicSource error: %v", err)
+	}
+	gen := New(core.New(src))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = gen.Normal(0, 1)
@@ -16,7 +20,11 @@ func BenchmarkNormal(b *testing.B) {
 }
 
 func BenchmarkPoisson(b *testing.B) {
-	gen := New(core.New(adapters.DeterministicSource([]byte("bench"))))
+	src, err := adapters.DeterministicSource([]byte("bench"))
+	if err != nil {
+		b.Fatalf("DeterministicSource error: %v", err)
+	}
+	gen := New(core.New(src))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = gen.Poisson(12)
@@ -24,7 +32,11 @@ func BenchmarkPoisson(b *testing.B) {
 }
 
 func BenchmarkGamma(b *testing.B) {
-	gen := New(core.New(adapters.DeterministicSource([]byte("bench"))))
+	src, err := adapters.DeterministicSource([]byte("bench"))
+	if err != nil {
+		b.Fatalf("DeterministicSource error: %v", err)
+	}
+	gen := New(core.New(src))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = gen.Gamma(2.5, 1.3)

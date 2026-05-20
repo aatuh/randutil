@@ -38,10 +38,10 @@ func TestTimeInNearPastFuture(t *testing.T) {
 		t.Fatalf("TimeInNearFuture error: %v", err)
 	}
 	now := stdtime.Now().UTC()
-	if !(past.Before(now) || past.Equal(now)) {
+	if past.After(now) {
 		t.Fatalf("TimeInNearPast returned future time: %v >= %v", past, now)
 	}
-	if !(future.After(now) || future.Equal(now)) {
+	if future.Before(now) {
 		t.Fatalf("TimeInNearFuture returned past time: %v <= %v", future, now)
 	}
 	const (

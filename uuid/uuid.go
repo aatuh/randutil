@@ -17,18 +17,6 @@ func V4() (UUID, error) {
 	return Default().V4()
 }
 
-// MustV4 returns a v4 UUID or panics.
-//
-// Returns:
-//   - UUID: A random UUID conforming to Version 4 and Variant 1.
-func MustV4() UUID {
-	u, err := V4()
-	if err != nil {
-		panic(err)
-	}
-	return u
-}
-
 // V7 returns a RFC 9562, variant 1 UUID v7 (time-ordered).
 // The first 48 bits encode Unix milliseconds big-endian.
 //
@@ -37,18 +25,6 @@ func MustV4() UUID {
 //   - error: An error if crypto/rand fails.
 func V7() (UUID, error) {
 	return Default().V7()
-}
-
-// MustV7 returns a v7 UUID or panics.
-//
-// Returns:
-//   - UUID: A random UUID conforming to Version 7 and Variant 1.
-func MustV7() UUID {
-	u, err := V7()
-	if err != nil {
-		panic(err)
-	}
-	return u
 }
 
 // Parse validates s (canonical 8-4-4-4-12, any case) and returns a
@@ -65,22 +41,6 @@ func Parse(s string) (UUID, error) {
 		return "", ErrInvalidFormat
 	}
 	return UUID(toLowerASCII(s)), nil
-}
-
-// MustParse panics on invalid input.
-//
-// Parameters:
-//   - s: The string to parse.
-//
-// Returns:
-//   - UUID: A lower-case UUID.
-//   - error: An error if the string is invalid.
-func MustParse(s string) UUID {
-	u, err := Parse(s)
-	if err != nil {
-		panic(err)
-	}
-	return u
 }
 
 // Nil returns the canonical nil UUID.
@@ -140,16 +100,16 @@ func (u UUID) Bytes() ([16]byte, error) {
 	return out, nil
 }
 
-// fromBytes formats a 16-byte slice into canonical lower-case string.
-func fromBytes(b []byte) UUID {
+// fromBytes formats 16 bytes into a canonical lower-case string.
+func fromBytes(b [16]byte) UUID {
 	var dst [36]byte
 	di := 0
-	for i := 0; i < 16; i++ {
+	for _, v := range b {
 		if di == 8 || di == 13 || di == 18 || di == 23 {
 			dst[di] = '-'
 			di++
 		}
-		hi, lo := hexHiLo(b[i])
+		hi, lo := hexHiLo(v)
 		dst[di] = hi
 		dst[di+1] = lo
 		di += 2

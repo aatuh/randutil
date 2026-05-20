@@ -6,11 +6,11 @@ import "github.com/aatuh/randutil/v2/core"
 //
 // Concurrency: safe for concurrent use if the underlying RNG is safe.
 type Generator[T any] struct {
-	rng core.RNG
+	rng rng
 }
 
 // New returns a collection Generator. If rng is nil, crypto/rand is used.
-func New[T any](rng core.RNG) *Generator[T] {
+func New[T any](rng rng) *Generator[T] {
 	if rng == nil {
 		rng = core.New(nil)
 	}
@@ -71,7 +71,7 @@ func (g *Generator[T]) PickByProbability(xs []T, p float64) ([]T, error) {
 	return pickByProbabilityWithRNG(g.rngOrDefault(), xs, p)
 }
 
-func (g *Generator[T]) rngOrDefault() core.RNG {
+func (g *Generator[T]) rngOrDefault() rng {
 	if g == nil || g.rng == nil {
 		return defaultRNG
 	}

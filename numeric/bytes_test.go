@@ -2,7 +2,6 @@ package numeric
 
 import (
 	"errors"
-	"io"
 	"testing"
 
 	"github.com/aatuh/randutil/v2/core"
@@ -35,17 +34,6 @@ func TestBytesInvalidLength(t *testing.T) {
 	if _, err := gen.Bytes(-1); !errors.Is(err, core.ErrNegativeLength) {
 		t.Fatalf("Bytes(-1) error = %v want %v", err, core.ErrNegativeLength)
 	}
-}
-
-func TestMustBytesPanicOnError(t *testing.T) {
-	errSrc := testutil.ErrReader{Err: io.ErrUnexpectedEOF}
-	gen := New(core.New(errSrc))
-	defer func() {
-		if recover() == nil {
-			t.Fatalf("MustBytes did not panic")
-		}
-	}()
-	gen.MustBytes(1)
 }
 
 func equalBytes(a, b []byte) bool {

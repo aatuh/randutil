@@ -10,18 +10,18 @@ import (
 //
 // Concurrency: safe for concurrent use if the underlying RNG is safe.
 type Generator struct {
-	rng core.RNG
+	rng rng
 	now func() time.Time
 }
 
 // New returns a time Generator. If rng is nil, crypto/rand is used.
-func New(rng core.RNG) *Generator {
+func New(rng rng) *Generator {
 	return NewWithClock(rng, time.Now)
 }
 
 // NewWithClock returns a time Generator bound to rng and clock.
 // If rng is nil, crypto/rand is used. If now is nil, time.Now is used.
-func NewWithClock(rng core.RNG, now func() time.Time) *Generator {
+func NewWithClock(rng rng, now func() time.Time) *Generator {
 	if rng == nil {
 		rng = core.New(nil)
 	}
@@ -117,18 +117,19 @@ func (g *Generator) nowUTC() time.Time {
 
 // daysInMonth returns the number of days in the given month of year.
 func daysInMonth(year int, month time.Month) int {
-	if month == 2 {
+	switch month {
+	case time.January, time.March, time.May, time.July, time.August,
+		time.October, time.December:
+		return 31
+	case time.April, time.June, time.September, time.November:
+		return 30
+	case time.February:
 		if isLeapYear(year) {
 			return 29
 		}
 		return 28
 	}
-	switch month {
-	case 4, 6, 9, 11:
-		return 30
-	default:
-		return 31
-	}
+	return 31
 }
 
 // isLeapYear returns true if year is a leap year.

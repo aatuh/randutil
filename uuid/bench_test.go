@@ -8,7 +8,11 @@ import (
 )
 
 func BenchmarkV4(b *testing.B) {
-	gen := New(core.New(adapters.DeterministicSource([]byte("bench"))))
+	src, err := adapters.DeterministicSource([]byte("bench"))
+	if err != nil {
+		b.Fatalf("DeterministicSource error: %v", err)
+	}
+	gen := New(core.New(src))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = gen.V4()
@@ -16,7 +20,11 @@ func BenchmarkV4(b *testing.B) {
 }
 
 func BenchmarkV7(b *testing.B) {
-	gen := New(core.New(adapters.DeterministicSource([]byte("bench"))))
+	src, err := adapters.DeterministicSource([]byte("bench"))
+	if err != nil {
+		b.Fatalf("DeterministicSource error: %v", err)
+	}
+	gen := New(core.New(src))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _ = gen.V7()

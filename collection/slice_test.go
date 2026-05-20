@@ -130,7 +130,7 @@ func TestSampleErrors(t *testing.T) {
 	}
 }
 
-func TestChoiceAndMust(t *testing.T) {
+func TestChoice(t *testing.T) {
 	v, err := Choice(10, 20, 30)
 	if err != nil {
 		t.Fatalf("Choice error: %v", err)
@@ -138,18 +138,6 @@ func TestChoiceAndMust(t *testing.T) {
 	if !contains([]int{10, 20, 30}, v) {
 		t.Fatalf("Choice returned unexpected value %d", v)
 	}
-	if MustChoice("a", "b") == "" {
-		t.Fatal("MustChoice returned empty result")
-	}
-}
-
-func TestMustPickPanics(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatal("MustPickOne did not panic for empty slice")
-		}
-	}()
-	MustPickOne([]int{})
 }
 
 func contains[T comparable](s []T, v T) bool {

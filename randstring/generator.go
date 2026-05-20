@@ -11,11 +11,11 @@ import (
 //
 // Concurrency: safe for concurrent use if the underlying RNG is safe.
 type Generator struct {
-	rng core.RNG
+	rng rng
 }
 
 // New returns a string Generator. If rng is nil, crypto/rand is used.
-func New(rng core.RNG) *Generator {
+func New(rng rng) *Generator {
 	if rng == nil {
 		rng = core.New(nil)
 	}
@@ -196,6 +196,7 @@ func (g *Generator) TokenHexBytes(nBytes int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer core.Zero(b)
 	out := make([]byte, hex.EncodedLen(len(b)))
 	hex.Encode(out, b)
 	return out, nil
@@ -226,6 +227,7 @@ func (g *Generator) TokenBase64Bytes(nBytes int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer core.Zero(b)
 	out := make([]byte, base64.StdEncoding.EncodedLen(len(b)))
 	base64.StdEncoding.Encode(out, b)
 	return out, nil
@@ -256,6 +258,7 @@ func (g *Generator) TokenURLSafeBytes(nBytes int) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer core.Zero(b)
 	out := make([]byte, base64.RawURLEncoding.EncodedLen(len(b)))
 	base64.RawURLEncoding.Encode(out, b)
 	return out, nil

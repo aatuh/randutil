@@ -5,9 +5,11 @@ import (
 	"github.com/aatuh/randutil/v2/core"
 	"github.com/aatuh/randutil/v2/dist"
 	"github.com/aatuh/randutil/v2/email"
+	"github.com/aatuh/randutil/v2/nanoid"
 	"github.com/aatuh/randutil/v2/numeric"
 	"github.com/aatuh/randutil/v2/randstring"
 	"github.com/aatuh/randutil/v2/randtime"
+	"github.com/aatuh/randutil/v2/ulid"
 	"github.com/aatuh/randutil/v2/uuid"
 )
 
@@ -35,6 +37,12 @@ type Rand struct {
 
 	// Email provides random email address generation.
 	Email *email.Generator
+
+	// NanoID provides NanoID-style identifier generation.
+	NanoID *nanoid.Generator
+
+	// ULID provides ULID generation.
+	ULID *ulid.Generator
 }
 
 // New returns a Rand with all generators bound to src. Pass nil to use
@@ -55,6 +63,8 @@ func New(src core.Source) Rand {
 		UUID:    uuid.New(coreGen),
 		Time:    randtime.New(coreGen),
 		Email:   email.New(coreGen),
+		NanoID:  nanoid.New(coreGen),
+		ULID:    ulid.New(coreGen),
 	}
 }
 

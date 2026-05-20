@@ -2,7 +2,6 @@ package numeric
 
 import (
 	"errors"
-	"io"
 	"math"
 	"testing"
 
@@ -98,30 +97,5 @@ func TestFloat64Deterministic(t *testing.T) {
 	}
 	if math.Abs(v-0.25) > 1e-12 {
 		t.Fatalf("Float64 = %f want 0.25", v)
-	}
-}
-
-func TestMustWrappersPanicOnError(t *testing.T) {
-	errSrc := testutil.ErrReader{Err: io.ErrUnexpectedEOF}
-	gen := New(core.New(errSrc))
-	expectsPanic := []struct {
-		name string
-		fn   func()
-	}{
-		{"MustUint64", func() { gen.MustUint64() }},
-		{"MustUint64n", func() { gen.MustUint64n(10) }},
-		{"MustIntn", func() { gen.MustIntn(10) }},
-		{"MustInt64n", func() { gen.MustInt64n(10) }},
-		{"MustFloat64", func() { gen.MustFloat64() }},
-	}
-	for _, tc := range expectsPanic {
-		t.Run(tc.name, func(t *testing.T) {
-			defer func() {
-				if recover() == nil {
-					t.Fatalf("%s did not panic", tc.name)
-				}
-			}()
-			tc.fn()
-		})
 	}
 }

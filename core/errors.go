@@ -9,6 +9,8 @@ var (
 	ErrInvalidProbability = errors.New("randutil: probability must be in [0,1]")
 	ErrNonPositiveRate    = errors.New("randutil: rate must be > 0")
 	ErrNegativeStdDev     = errors.New("randutil: stddev must be >= 0")
+	ErrNegativeDuration   = errors.New("randutil: duration must be >= 0")
+	ErrInvalidJitter      = errors.New("randutil: jitter must be in [0,1]")
 	ErrEmptyCharset       = errors.New("randutil: charset must be non-empty")
 	ErrInvalidCharset     = errors.New("randutil: charset must be ASCII")
 	ErrOddHexLength       = errors.New("randutil: hex length must be even")
@@ -22,4 +24,8 @@ var (
 	ErrMinGreaterThanMax       = errors.New("randutil: min greater than max")
 	ErrInvalidRangeNonPositive = errors.New("randutil: range must be positive")
 	ErrResultOutOfRange        = errors.New("randutil: result out of range")
+
+	ErrSourceClosed          = errors.New("randutil: source closed")
+	ErrWorkspaceClosed       = errors.New("randutil: workspace closed")
+	ErrDeterministicDisabled = errors.New("randutil: deterministic sources disabled")
 )

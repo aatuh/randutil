@@ -6,11 +6,11 @@ import "github.com/aatuh/randutil/v2/core"
 //
 // Concurrency: safe for concurrent use if the underlying RNG is safe.
 type Generator struct {
-	rng core.RNG
+	rng rng
 }
 
 // New returns a numeric Generator. If rng is nil, crypto/rand is used.
-func New(rng core.RNG) *Generator {
+func New(rng rng) *Generator {
 	if rng == nil {
 		rng = core.New(nil)
 	}

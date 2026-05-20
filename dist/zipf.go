@@ -3,8 +3,6 @@ package dist
 import (
 	"errors"
 	"math"
-
-	"github.com/aatuh/randutil/v2/core"
 )
 
 // Zipf is a precomputed sampler for Zipf(s, v) over [1..imax] where:
@@ -13,7 +11,7 @@ import (
 //
 // It builds a normalized CDF for O(log n) sampling via binary search.
 type Zipf struct {
-	rng   core.RNG
+	rng   rng
 	s     float64
 	v     float64
 	imax  int

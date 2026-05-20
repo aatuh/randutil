@@ -40,12 +40,6 @@ func TestV4ErrorPropagation(t *testing.T) {
 	if _, err := gen.V4(); err == nil {
 		t.Fatalf("expected error when entropy fails")
 	}
-	defer func() {
-		if recover() == nil {
-			t.Fatalf("MustV4 did not panic on entropy failure")
-		}
-	}()
-	gen.MustV4()
 }
 
 func TestV7Structure(t *testing.T) {
@@ -92,7 +86,7 @@ func TestV7WithClock(t *testing.T) {
 	}
 }
 
-func TestParseAndMustParse(t *testing.T) {
+func TestParse(t *testing.T) {
 	u, err := Parse("A8098C1A-F86E-11DA-BDBF-10B96E4EF00D")
 	if err != nil {
 		t.Fatalf("Parse error: %v", err)
@@ -100,15 +94,6 @@ func TestParseAndMustParse(t *testing.T) {
 	if string(u) != strings.ToLower("A8098C1A-F86E-11DA-BDBF-10B96E4EF00D") {
 		t.Fatalf("Parse did not lowercase result: %s", u)
 	}
-	if MustParse("00000000-0000-0000-0000-000000000000").IsNil() != true {
-		t.Fatalf("MustParse nil UUID not detected")
-	}
-	defer func() {
-		if recover() == nil {
-			t.Fatalf("MustParse did not panic on invalid input")
-		}
-	}()
-	MustParse("not-a-uuid")
 }
 
 func TestUUIDBytesValidation(t *testing.T) {

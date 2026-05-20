@@ -7,7 +7,7 @@ import (
 	"github.com/aatuh/randutil/v2/core"
 )
 
-func shuffleWithRNG[T any](rng core.RNG, slice []T) error {
+func shuffleWithRNG[T any](rng rng, slice []T) error {
 	n := len(slice)
 	for i := n - 1; i > 0; i-- {
 		bound, err := intToUint64(i + 1)
@@ -27,7 +27,7 @@ func shuffleWithRNG[T any](rng core.RNG, slice []T) error {
 	return nil
 }
 
-func sampleWithRNG[T any](rng core.RNG, s []T, k int) ([]T, error) {
+func sampleWithRNG[T any](rng rng, s []T, k int) ([]T, error) {
 	n := len(s)
 	if k < 0 {
 		return nil, core.ErrNegativeLength
@@ -59,7 +59,7 @@ func sampleWithRNG[T any](rng core.RNG, s []T, k int) ([]T, error) {
 	return dup[:k], nil
 }
 
-func pickOneWithRNG[T any](rng core.RNG, slice []T) (T, error) {
+func pickOneWithRNG[T any](rng rng, slice []T) (T, error) {
 	if len(slice) == 0 {
 		var zero T
 		return zero, core.ErrEmptySlice
@@ -72,7 +72,7 @@ func pickOneWithRNG[T any](rng core.RNG, slice []T) (T, error) {
 	return slice[idx], nil
 }
 
-func weightedChoiceWithRNG[T any](rng core.RNG, items []T, weights []float64) (T, error) {
+func weightedChoiceWithRNG[T any](rng rng, items []T, weights []float64) (T, error) {
 	var z T
 	if len(items) == 0 {
 		return z, core.ErrEmptyItems
@@ -111,7 +111,7 @@ func weightedChoiceWithRNG[T any](rng core.RNG, items []T, weights []float64) (T
 }
 
 func weightedSampleWithRNG[T any](
-	rng core.RNG, items []T, weights []float64, k int,
+	rng rng, items []T, weights []float64, k int,
 ) ([]T, error) {
 	if k < 0 {
 		return nil, core.ErrNegativeLength
@@ -168,7 +168,7 @@ func weightedSampleWithRNG[T any](
 	return out, nil
 }
 
-func pickByProbabilityWithRNG[T any](rng core.RNG, xs []T, p float64) ([]T, error) {
+func pickByProbabilityWithRNG[T any](rng rng, xs []T, p float64) ([]T, error) {
 	if p < 0 || p > 1 {
 		return nil, core.ErrInvalidProbability
 	}

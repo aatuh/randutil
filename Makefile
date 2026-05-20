@@ -1,14 +1,15 @@
 SHELL := /bin/bash
 
 GO ?= go
-GOWORK ?= off
+GOWORK = off
+export GOWORK
 
-TOOLS := golangci-lint gosec govulncheck
-GOLANGCI_LINT_VERSION ?= v1.64.8
-GOSEC_VERSION ?= v2.22.11
-GOVULNCHECK_VERSION ?= v1.1.4
+GOLANGCI_LINT := github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+GOSEC := github.com/securego/gosec/v2/cmd/gosec
+GOVULNCHECK := golang.org/x/vuln/cmd/govulncheck
+FUZZTIME ?= 10s
 
-.PHONY: help test test-race lint gosec vuln tidy fmt tools clean finalize
+.PHONY: help test test-ci test-must test-race vet lint gosec vuln tidy fmt tools fuzz-smoke clean finalize
 
 help: ## Show help
 	@awk 'BEGIN {FS=":.*## "}; \
@@ -19,31 +20,43 @@ help: ## Show help
 			printf "  %-14s %s\n", $$1, $$2 \
 		}' $(MAKEFILE_LIST)
 
-tools: ## Install lint/vuln tools
-	@$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
-	@$(GO) install github.com/securego/gosec/v2/cmd/gosec@$(GOSEC_VERSION)
-	@$(GO) install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+tools: ## Verify pinned Go tools from go.mod
+	@$(GO) tool $(GOLANGCI_LINT) version >/dev/null
+	@$(GO) tool $(GOSEC) -version >/dev/null
+	@$(GO) tool $(GOVULNCHECK) -version >/dev/null
 
 fmt: ## Run gofmt
-	@GOWORK=$(GOWORK) $(GO) fmt ./...
+	$(GO) fmt ./...
 
 lint: tools ## Run golangci-lint
-	@GOWORK=$(GOWORK) golangci-lint run ./...
+	$(GO) tool $(GOLANGCI_LINT) run ./...
 
 vuln: tools ## Run govulncheck
-	@GOWORK=$(GOWORK) govulncheck ./...
+	$(GO) tool $(GOVULNCHECK) ./...
 
 gosec: tools ## Run gosec
-	@GOWORK=$(GOWORK) gosec ./...
+	$(GO) tool $(GOSEC) ./...
 
 tidy: ## Run go mod tidy
-	@GOWORK=$(GOWORK) $(GO) mod tidy
+	$(GO) mod tidy
 
 test: ## Run unit tests
-	@GOWORK=$(GOWORK) $(GO) test ./...
+	$(GO) test ./...
+
+test-ci: ## Run unit tests with randutil_ci build tag
+	$(GO) test ./... -tags=randutil_ci
+
+test-must: ## Run unit tests with randutil_must build tag
+	$(GO) test ./... -tags=randutil_must
 
 test-race: ## Run unit tests with race detector
-	@GOWORK=$(GOWORK) $(GO) test ./... -race -count=1
+	$(GO) test ./... -race -count=1
+
+vet: ## Run go vet
+	$(GO) vet ./...
+
+fuzz-smoke: ## Run fuzz targets briefly
+	FUZZTIME=$(FUZZTIME) scripts/fuzz.sh
 
 clean: ## Clean test cache
 	@$(GO) clean -testcache
@@ -51,10 +64,14 @@ clean: ## Clean test cache
 finalize: ## Run every quality assurance tool
 	$(MAKE) tools
 	$(MAKE) fmt
+	$(MAKE) vet
 	$(MAKE) lint
 	$(MAKE) vuln
 	$(MAKE) gosec
 	$(MAKE) tidy
 	$(MAKE) test
+	$(MAKE) test-ci
+	$(MAKE) test-must
 	$(MAKE) test-race
+	$(MAKE) fuzz-smoke
 	$(MAKE) clean
