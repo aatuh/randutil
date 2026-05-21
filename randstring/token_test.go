@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"testing"
+
+	"github.com/aatuh/randutil/v2/internal/testutil"
 )
 
 func TestTokens(t *testing.T) {
@@ -61,5 +63,56 @@ func TestTokens(t *testing.T) {
 	}
 	if _, err := base64.RawURLEncoding.DecodeString(string(urlb)); err != nil {
 		t.Fatalf("invalid url-safe b64 bytes: %v", err)
+	}
+}
+
+func TestTokenBytesAreEncodedAndCallerOwned(t *testing.T) {
+	raw := []byte{0xde, 0xad, 0xbe, 0xef}
+	tests := map[string]struct {
+		token func(*Generator) ([]byte, error)
+		want  []byte
+	}{
+		"hex": {
+			token: func(g *Generator) ([]byte, error) {
+				return g.TokenHexBytes(len(raw))
+			},
+			want: []byte(hex.EncodeToString(raw)),
+		},
+		"base64": {
+			token: func(g *Generator) ([]byte, error) {
+				return g.TokenBase64Bytes(len(raw))
+			},
+			want: []byte(base64.StdEncoding.EncodeToString(raw)),
+		},
+		"url-safe": {
+			token: func(g *Generator) ([]byte, error) {
+				return g.TokenURLSafeBytes(len(raw))
+			},
+			want: []byte(base64.RawURLEncoding.EncodeToString(raw)),
+		},
+	}
+
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			got, err := tt.token(NewWithSource(testutil.NewSeqReader(raw)))
+			if err != nil {
+				t.Fatalf("token error: %v", err)
+			}
+			if string(got) != string(tt.want) {
+				t.Fatalf("token bytes = %q, want %q", got, tt.want)
+			}
+			got[0] = 'x'
+			if string(tt.want) == string(got) {
+				t.Fatalf("test setup did not mutate returned token")
+			}
+
+			next, err := tt.token(NewWithSource(testutil.NewSeqReader(raw)))
+			if err != nil {
+				t.Fatalf("next token error: %v", err)
+			}
+			if string(next) != string(tt.want) {
+				t.Fatalf("mutating previous token affected next token: %q want %q", next, tt.want)
+			}
+		})
 	}
 }
