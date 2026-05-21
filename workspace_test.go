@@ -119,6 +119,93 @@ func TestWorkspaceUsageAndClose(t *testing.T) {
 	}
 }
 
+func TestWorkspaceUsageSnapshotReturnsCopy(t *testing.T) {
+	ws := NewWorkspace(DeterministicRoot([]byte("seed")))
+	alpha, err := ws.Stream("alpha")
+	if err != nil {
+		t.Fatalf("Stream alpha error: %v", err)
+	}
+	beta, err := ws.Stream("beta")
+	if err != nil {
+		t.Fatalf("Stream beta error: %v", err)
+	}
+	if _, err := alpha.Bytes(8); err != nil {
+		t.Fatalf("alpha Bytes error: %v", err)
+	}
+	if _, err := beta.Bytes(12); err != nil {
+		t.Fatalf("beta Bytes error: %v", err)
+	}
+
+	snapshot := ws.UsageSnapshot()
+	if got := snapshot["alpha"]; got != 8 {
+		t.Fatalf("snapshot alpha = %d, want 8", got)
+	}
+	if got := snapshot["beta"]; got != 12 {
+		t.Fatalf("snapshot beta = %d, want 12", got)
+	}
+
+	snapshot["alpha"] = 99
+	next := ws.UsageSnapshot()
+	if got := next["alpha"]; got != 8 {
+		t.Fatalf("mutating snapshot changed workspace usage: got %d want 8", got)
+	}
+}
+
+func TestWorkspaceDisabledCacheDoesNotTrackUsage(t *testing.T) {
+	ws := NewWorkspaceWithOptions(DeterministicRoot([]byte("seed")), WorkspaceOptions{
+		MaxCached: -1,
+	})
+	gen, err := ws.Stream("alpha")
+	if err != nil {
+		t.Fatalf("Stream error: %v", err)
+	}
+	defer func() {
+		if err := gen.Close(); err != nil {
+			t.Fatalf("Close stream error: %v", err)
+		}
+	}()
+
+	if _, err := gen.Bytes(16); err != nil {
+		t.Fatalf("Bytes error: %v", err)
+	}
+	if _, ok := ws.Usage("alpha"); ok {
+		t.Fatalf("disabled cache should not retain usage for alpha")
+	}
+	if snapshot := ws.UsageSnapshot(); len(snapshot) != 0 {
+		t.Fatalf("disabled cache snapshot length = %d, want 0", len(snapshot))
+	}
+}
+
+func TestWorkspaceEvictsOldestCachedStream(t *testing.T) {
+	ws := NewWorkspaceWithOptions(DeterministicRoot([]byte("seed")), WorkspaceOptions{
+		MaxCached: 1,
+	})
+	alpha, err := ws.Stream("alpha")
+	if err != nil {
+		t.Fatalf("Stream alpha error: %v", err)
+	}
+	if _, err := alpha.Bytes(1); err != nil {
+		t.Fatalf("alpha Bytes error: %v", err)
+	}
+
+	beta, err := ws.Stream("beta")
+	if err != nil {
+		t.Fatalf("Stream beta error: %v", err)
+	}
+	if beta == alpha {
+		t.Fatalf("different labels returned the same generator")
+	}
+	if _, ok := ws.Usage("alpha"); ok {
+		t.Fatalf("evicted alpha stream should not retain usage")
+	}
+	if _, ok := ws.Usage("beta"); !ok {
+		t.Fatalf("expected beta stream to be cached")
+	}
+	if _, err := alpha.Bytes(1); !errors.Is(err, core.ErrSourceClosed) {
+		t.Fatalf("evicted alpha Bytes error = %v, want ErrSourceClosed", err)
+	}
+}
+
 func TestWorkspaceSubDeterministic(t *testing.T) {
 	seed := []byte("seed")
 	ws1 := NewWorkspace(DeterministicRoot(seed))
