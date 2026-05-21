@@ -8,6 +8,29 @@ This project follows Semantic Versioning for the public `v2` module API.
 
 No unreleased changes yet.
 
+## v2.1.3 - 2026-05-21
+
+### Added
+
+- Executable examples for root-package derivation and workspace usage, NanoID
+  generation, and ULID generation.
+- Regression tests for workspace usage snapshots, disabled-cache behavior,
+  cached stream eviction, derived root contracts, and byte-token ownership.
+
+### Changed
+
+- Tightened README navigation, quick-start structure, and deterministic testing
+  guidance.
+- Reduced release and benchmark documentation drift by consolidating benchmark
+  evidence guidance in `docs/benchmarks.md`.
+- Updated repository ignore rules for local hidden-file artifacts.
+
+### Documentation
+
+- Clarified vulnerability-reporting expectations in `SECURITY.md`.
+- Removed the temporary production-readiness tracking file now that release
+  readiness evidence has moved into permanent project docs and GitHub settings.
+
 ## v2.1.2 - 2026-05-21
 
 ### Added
