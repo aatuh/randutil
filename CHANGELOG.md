@@ -8,7 +8,7 @@ This project follows Semantic Versioning for the public `v2` module API.
 
 No unreleased changes yet.
 
-## v2.1.2 - 2026-05-20
+## v2.1.2 - 2026-05-21
 
 ### Added
 
