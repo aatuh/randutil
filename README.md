@@ -4,6 +4,13 @@ CSPRNG-first random utilities for Go. Small, composable generators with
 bias-free numeric helpers, strings/tokens, distributions, UUIDs, ULIDs,
 NanoIDs, and sampling utilities.
 
+## Documentation
+
+- [API reference and executable examples](https://pkg.go.dev/github.com/aatuh/randutil/v2)
+- [Changelog](CHANGELOG.md)
+- [Release process](docs/release.md)
+- [Benchmark process](docs/benchmarks.md)
+
 ## Install
 
 ```bash
@@ -12,55 +19,101 @@ go get github.com/aatuh/randutil/v2
 
 Requires Go 1.25.0+.
 
-Production-readiness notes:
-
-- [Changelog](CHANGELOG.md)
-- [Release process](docs/release.md)
-- [Benchmark process](docs/benchmarks.md)
-
-Production security boundaries:
-
-- `randutil` is not a FIPS module or audited cryptographic library.
-- Default constructors use `crypto/rand.Reader`; use `crypto/rand.Reader`
-  directly when strict OS RNG or FIPS compliance is required.
-- Derived and deterministic streams depend on seed quality. Use
-  deterministic roots only for tests/fixtures unless the seed is high-entropy,
-  secret, and acceptable for your threat model.
-
 ## Quick start
+
+Use `Default` for the normal secure generator bundle. It uses
+`crypto/rand.Reader` through the package generators.
 
 ```go
 package main
 
 import (
-  "fmt"
-  "log"
+	"fmt"
+	"log"
 
-  "github.com/aatuh/randutil/v2"
+	"github.com/aatuh/randutil/v2"
 )
 
 func main() {
-  r := randutil.Default()
+	r := randutil.Default()
 
-  b, err := r.Numeric.Bytes(16)
-  if err != nil {
-    log.Fatal(err)
-  }
-  tok, err := r.String.TokenURLSafe(24)
-  if err != nil {
-    log.Fatal(err)
-  }
-  u4, err := r.UUID.V4()
-  if err != nil {
-    log.Fatal(err)
-  }
-  when, err := r.Time.Datetime()
-  if err != nil {
-    log.Fatal(err)
-  }
+	b, err := r.Numeric.Bytes(16)
+	if err != nil {
+		log.Fatal(err)
+	}
+	tok, err := r.String.TokenURLSafe(24)
+	if err != nil {
+		log.Fatal(err)
+	}
+	u4, err := r.UUID.V4()
+	if err != nil {
+		log.Fatal(err)
+	}
+	when, err := r.Time.Datetime()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  fmt.Println(len(b), len(tok), u4, when)
+	fmt.Println(len(b), len(tok), u4, when)
 }
+```
+
+## Choose a generator
+
+| Use case | API | Notes |
+| --- | --- | --- |
+| Secure default utilities | `randutil.Default()` or package functions | Uses `crypto/rand.Reader`. |
+| Inject a source or RNG | `randutil.New(src)`, package `New` functions | Use for tests, fixtures, wrappers, and custom sources. |
+| Named derived streams | `randutil.NewWorkspace(root)` | Domain-separates labels from a shared root. |
+| One derived stream | `randutil.Derive(seed, label)` | Requires high-entropy secret seeds for security-sensitive use. |
+| Fast CSPRNG stream | `randutil.Fast()` | Seeded from `crypto/rand`; not for strict FIPS/OS RNG compliance. |
+| Deterministic fixtures | `adapters.DeterministicSource`, `randutil.DeterministicRoot` | Testing and replay only unless the seed is high-entropy and secret. |
+
+## Common recipes
+
+URL-safe token:
+
+```go
+s, _ := randstring.TokenURLSafe(24) // ~32 chars, URL-safe
+```
+
+Range and sampling:
+
+```go
+n, _ := numeric.IntRange(10, 20) // inclusive
+arr := []int{1, 2, 3, 4, 5}
+_ = collection.Shuffle(arr)
+subset, _ := collection.Sample(arr, 2)
+```
+
+UUIDs:
+
+```go
+u4, _ := uuid.V4()
+u7, _ := uuid.V7()
+```
+
+ULID / NanoID:
+
+```go
+u, _ := ulid.ID()
+id, _ := nanoid.ID()
+```
+
+UUID v7 and ULID values encode time for ordering, but they are not monotonic
+sequence counters within the same millisecond.
+
+Distributions:
+
+```go
+x, _ := dist.Normal(0, 1)
+k, _ := dist.Poisson(12)
+```
+
+Email:
+
+```go
+mail, _ := email.Email(email.Options{TLD: "org"})
 ```
 
 ## Deterministic testing
@@ -72,23 +125,23 @@ across generators:
 package main
 
 import (
-  "fmt"
+	"fmt"
 
-  "github.com/aatuh/randutil/v2/adapters"
-  "github.com/aatuh/randutil/v2/core"
-  "github.com/aatuh/randutil/v2/randstring"
+	"github.com/aatuh/randutil/v2/adapters"
+	"github.com/aatuh/randutil/v2/core"
+	"github.com/aatuh/randutil/v2/randstring"
 )
 
 func main() {
-  src, err := adapters.DeterministicSource([]byte("seed"))
-  if err != nil {
-    panic(err)
-  }
-  rng := core.New(src)
-  gen := randstring.New(rng)
+	src, err := adapters.DeterministicSource([]byte("seed"))
+	if err != nil {
+		panic(err)
+	}
+	rng := core.New(src)
+	gen := randstring.New(rng)
 
-  s, _ := gen.String(12)
-  fmt.Println(s)
+	s, _ := gen.String(12)
+	fmt.Println(s)
 }
 ```
 
@@ -96,6 +149,12 @@ For exact byte control in tests, pass a custom `io.Reader` into `core.New`.
 If you want the intent to be explicit, use `adapters/deterministic`.
 Deterministic sources are for tests and benchmarks only; DO NOT USE FOR
 TOKENS / AUTH unless the seed is high-entropy and kept secret.
+
+To check that deterministic constructors fail where policy mode is enabled:
+
+```bash
+go test -tags=randutil_policy ./...
+```
 
 ## Workspace and domain separation
 
@@ -167,6 +226,18 @@ id, _ := fast.UUID.V7()
 fmt.Println(id)
 ```
 
+## Record and replay
+
+Record entropy when debugging a deterministic failure:
+
+```go
+src := adapters.NewRecorder(adapters.CryptoSource())
+rng := core.New(src)
+_, _ = rng.Bytes(16)
+replay := src.Replay()
+_ = replay
+```
+
 ## Must helpers (opt-in)
 
 `Must*` helpers are gated behind the build tag `randutil_must` to avoid
@@ -198,67 +269,10 @@ go build -tags=randutil_must ./...
 If your source or RNG is not thread-safe, wrap it with
 `adapters.LockedSource` or `adapters.LockedRNG`.
 
-## Common recipes
-
-URL-safe token:
-
-```go
-s, _ := randstring.TokenURLSafe(24) // ~32 chars, URL-safe
-```
-
-Range and sampling:
-
-```go
-n, _ := numeric.IntRange(10, 20) // inclusive
-arr := []int{1, 2, 3, 4, 5}
-_ = collection.Shuffle(arr)
-subset, _ := collection.Sample(arr, 2)
-```
-
-UUIDs:
-
-```go
-u4, _ := uuid.V4()
-u7, _ := uuid.V7()
-```
-
-ULID / NanoID:
-
-```go
-u, _ := ulid.ID()
-id, _ := nanoid.ID()
-```
-
-UUID v7 and ULID values encode time for ordering, but they are not monotonic
-sequence counters within the same millisecond.
-
-Distributions:
-
-```go
-x, _ := dist.Normal(0, 1)
-k, _ := dist.Poisson(12)
-```
-
-Email:
-
-```go
-mail, _ := email.Email(email.Options{TLD: "org"})
-```
-
-Record and replay entropy for debugging deterministic failures:
-
-```go
-src := adapters.NewRecorder(adapters.CryptoSource())
-rng := core.New(src)
-_, _ = rng.Bytes(16)
-replay := src.Replay()
-_ = replay
-```
-
 ## Notes
 
 Every `MustX(...)` has a non-panicking `X(...)` variant that returns
 `(T, error)` for server/CLI contexts.
 
-The `example_test.go` file contains executable examples that appear in
-`godoc` and are run by `go test` to prevent documentation drift.
+Package `example_test.go` files contain executable examples that appear in
+`pkg.go.dev` and are run by `go test` to prevent documentation drift.
