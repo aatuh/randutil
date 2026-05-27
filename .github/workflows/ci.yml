@@ -77,7 +77,7 @@ jobs:
           PY
       - name: Upload govulncheck SARIF
         if: always() && hashFiles('govulncheck.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4.35.5
+        uses: github/codeql-action/upload-sarif@v4.36.0
         with:
           sarif_file: govulncheck.sarif
           category: govulncheck
@@ -109,7 +109,7 @@ jobs:
           PY
       - name: Upload gosec SARIF
         if: always() && hashFiles('gosec.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4.35.5
+        uses: github/codeql-action/upload-sarif@v4.36.0
         with:
           sarif_file: gosec.sarif
           category: gosec
